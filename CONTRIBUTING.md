@@ -1,6 +1,7 @@
 # Contributing Guidelines
 
-Please ensure all pull requests include appropriate RDoc comments and Rspec tests.
+Please ensure all pull requests include appropriate Yard docstrings and Rspec
+tests.
 
 # Environment setup
 
