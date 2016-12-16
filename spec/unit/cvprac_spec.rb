@@ -28,5 +28,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# require 'mygem/version'
-true
+RSpec.describe Cvprac do
+  it 'has a version number' do
+    expect(Cvprac::VERSION).not_to be nil
+  end
+
+  # describe '#someMethod' do
+  #   context 'when called with no arguments' do
+  #     it 'returns nil' do
+  #       expect(Cvprac.someMethod).to be nil
+  #     end
+  #   end
+  # end
+end
