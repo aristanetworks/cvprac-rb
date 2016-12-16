@@ -28,4 +28,4 @@ This will create a git tag, push git commits and tags and push the .gem file to
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/arista-eosplus/cvprac-rb This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/arista-aristanetworks/cvprac-rb This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
