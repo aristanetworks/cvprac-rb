@@ -24,9 +24,11 @@ Gem::Specification.new do |spec|
   spec.metadata['yard.run'] = 'yri' # use "yard" to build full HTML docs.
 
   # spec.add_runtime_dependency 'inifile', '~> 0'
+  spec.add_runtime_dependency 'http-cookie'
 
   spec.add_development_dependency 'bump'
   spec.add_development_dependency 'bundler'
+  spec.add_development_dependency 'fuubar'
   spec.add_development_dependency 'github_changelog_generator'
   spec.add_development_dependency 'guard'
   spec.add_development_dependency 'guard-rspec'
@@ -41,6 +43,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rspec-nc'
   spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'simplecov'
+  spec.add_development_dependency 'webmock'
   spec.add_development_dependency 'yard'
 
   spec.required_ruby_version = '>= 1.9.3'
