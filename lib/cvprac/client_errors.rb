@@ -1,3 +1,4 @@
+# encoding: utf-8
 # BSD 3-Clause License
 #
 # Copyright (c) 2016, Arista Networks EOS+
@@ -27,14 +28,39 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-require 'cvprac/version'
-require 'cvprac/client'
-require 'cvprac/client_errors'
-
-# Top level definition of Cvprac
 #
-module Cvprac
-  # Your code goes here...
-  true
+# @author Jere Julian <jere@arista.com>
+#
+
+# Error logging in to CVP
+class CvpLoginError < StandardError
+  attr_reader :code, :msg
+  def initialize(msg = 'Unknown error')
+    @msg = msg
+    super("ERROR: #{msg}")
+  end
+end
+
+# General error with a CVP HTTP request
+class CvpRequestError < StandardError
+  attr_reader :code, :msg
+  def initialize(code = nil, msg = 'Unknown error')
+    @code = code
+    @msg = msg
+    super("ERROR: #{code} - #{msg}")
+  end
+end
+
+# Session to the CVP node(s) has been logged out
+class CvpSessionLogOutError < StandardError
+  def initialize(msg = 'Unknown error')
+    super("ERROR: #{msg}")
+  end
+end
+
+# General error for CVP requests
+class CvpApiError < StandardError
+  def initialize(msg = 'Unknown error')
+    super("ERROR: #{msg}")
+  end
 end
