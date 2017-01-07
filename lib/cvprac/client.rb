@@ -37,10 +37,40 @@
 require 'cgi'
 require 'http-cookie'
 require 'json'
+require 'logger'
 require 'net/http'
 require 'pp'
+require 'syslog/logger'
 
 # Establishes and maintains connections with CVP node(s)
+#
+# @example
+#   $ bundle exec pry
+#   [1] pry(main)> require 'cvprac'
+#   => true
+#   [2] pry(main)> cvp = CvpClient.new
+#   => #<CvpClient:0x007fb0aa36c970>
+#   [3] pry(main)> cvp.connect(['cvp1', 'cvp2', 'cvp3'], \
+#                             'cvpadmin', 'arista123')
+#   => nil
+#   [4] pry(main)> result = cvp.get('/user/getUsers.do', {queryparam: nil, \
+#                                   startIndex: 0, endIndex: 0})
+#   [5] pry(main)> require 'pp'
+#   [6] pry(main)> pp(result)
+#   => {"total"=>1,
+#    "users"=>
+#     [{"userId"=>"cvpadmin",
+#       "firstName"=>nil,
+#       "email"=>"jere@arista.com",
+#       "lastAccessed"=>1483726955950,
+#       "userStatus"=>"Enabled",
+#       "currentStatus"=>"Online",
+#       "contactNumber"=>nil,
+#       "factoryId"=>1,
+#       "lastName"=>nil,
+#       "password"=>nil,
+#       "id"=>28}],
+#    "roles"=>{"cvpadmin"=>["network-admin"]}}
 class CvpClient
   METHOD_LIST = {
     get: Net::HTTP::Get,
@@ -59,9 +89,9 @@ class CvpClient
 
   # Initialize a new CvpClient object
   #
-  # @param _syslog [Bool] log to syslog (Default: false)
-  # @param _filename [String] Filename to write logs
-  def initialize(_syslog = nil, _filename = nil)
+  # @param syslog [Bool] log to syslog (Default: false)
+  # @param filename [String] Filename to write logs or :STDOUT
+  def initialize(_logger = 'cvprac', syslog = false, filename = nil)
     @agent = File.basename($PROGRAM_NAME)
     @agent_full = "#{@agent} (#{RUBY_PLATFORM}) "\
                   "cvprac-rb/#{Cvprac::VERSION}"
@@ -69,9 +99,9 @@ class CvpClient
     @connect_timeout = nil
     @cookies = HTTP::CookieJar.new
     @error_msg = nil
-    @headers = { 'User-agent' => @agent_full,
+    @headers = { 'Accept' => 'application/json',
                  'Content-Type' => 'application/json',
-                 'Accept' => 'application/json' }
+                 'User-agent' => @agent_full }
     @node_count = nil
     @node_pool = nil
     @nodes = nil
@@ -81,6 +111,31 @@ class CvpClient
     # OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER
     @ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
     @url_prefix = nil
+
+    if filename == :STDOUT
+      @logstdout = Logger.new(STDOUT)
+      @logstdout.level = Logger::INFO
+    else
+      @logfile = Logger.new(filename) unless filename.nil?
+    end
+    @syslog = Syslog::Logger.new(filename) if syslog
+
+    log(Logger::INFO, 'Initialized-multi')
+  end
+
+  # Log message to all configured loggers
+  #
+  # @param severity [Logger] Severity to log to:
+  #                          DEBUG < INFO < WARN < ERROR < FATAL
+  # @param msg [String] Message to log
+  # @param &block [block] Messages can be passed as a block to delay evaluation
+  def log(severity = Logger::INFO, msg = nil, &msg_block)
+    if block_given?
+      msg = msg_block.call
+    end
+    @logstdout.add(severity, msg) if defined? @logstdout
+    @logfile.add(severity, msg) if defined? @logfile
+    @syslog.add(severity, msg) if defined? @syslog
   end
 
   # Connect to one or more CVP nodes.
@@ -182,6 +237,7 @@ class CvpClient
         title = response.body.match(%r{<h1>(.*?)</h1>})[1]
         msg = title if title
       end
+      log(Logger::ERROR) { 'ErrorCode: ' + reponse.code + ' - ' + msg }
       raise CvpRequestError.new(response.code, msg)
     end
     JSON.parse(response.body)
@@ -227,10 +283,12 @@ class CvpClient
 
     begin
       login
-    rescue
+      # rescue
       # rescue Exception => error
+    rescue CvpApiError, CvpRequestError, CvpSessionLogOutError => error
+      log(Logger::ERROR) { error }
+      # Invalidate the session due to error
       @session = nil
-      raise
     end
     error
   end
@@ -239,11 +297,13 @@ class CvpClient
   def good_response?(response, prefix)
     if response.code.to_i != 200
       msg = "#{prefix}: Request Error: #{response.reason}"
+      log(Logger::ERROR) { msg }
       raise CvpRequestError, msg
     end
 
     if response.body.include? 'LOG OUT MESSAGE'
       msg = "#{prefix}: Request Error: session logged out"
+      log(Logger::ERROR) { msg }
       raise CvpSessionLogOutError, msg
     end
 
@@ -252,6 +312,7 @@ class CvpClient
     body = JSON.parse(response.body)
     if body.key?('errorMessage')
       msg = "errorCode: #{body['errorCode']}: #{body['errorMessage']}"
+      log(Logger::ERROR) { msg }
     else
       error_list = if body.key?('errors')
                      body['errors']
@@ -263,6 +324,9 @@ class CvpClient
         err_msg += "\n#{error_list[idx]}"
       end
     end
+
+    msg = "#{prefix}: Request Error: #{err_msg}"
+    log(Logger::ERROR) { msg }
     raise CvpApiError, msg
   end
   # rubocop:enable Metrics/PerceivedComplexity
