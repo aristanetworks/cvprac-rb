@@ -43,6 +43,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rspec-nc'
   spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'simplecov'
+  spec.add_development_dependency 'simplecov-json'
+  spec.add_development_dependency 'simplecov-rcov'
   spec.add_development_dependency 'webmock'
   spec.add_development_dependency 'yard'
 
