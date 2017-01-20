@@ -1,5 +1,20 @@
-require 'cvprac'
+require 'simplecov'
+require 'simplecov-json'
+require 'simplecov-rcov'
 require 'webmock/rspec'
+
+SimpleCov.formatters = [
+  SimpleCov::Formatter::HTMLFormatter,
+  SimpleCov::Formatter::JSONFormatter,
+  SimpleCov::Formatter::RcovFormatter
+]
+SimpleCov.start do
+  add_filter '/spec/'
+  add_filter '/.bundle/'
+end
+
+# Must come after simplecov
+require 'cvprac'
 
 # Include libs in the spec/support dir
 dir = File.expand_path(File.dirname(__FILE__))
