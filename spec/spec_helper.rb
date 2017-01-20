@@ -23,7 +23,7 @@ Dir["#{dir}/support/**/*.rb"].sort.each { |f| require f }
 
 include FixtureHelpers
 
-WebMock.disable_net_connect!(allow_localhost: true)
+WebMock.disable_net_connect!(net_http_connect_on_start: true)
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
