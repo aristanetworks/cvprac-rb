@@ -61,6 +61,7 @@ require 'syslog/logger'
 #    "users"=>
 #     [{"userId"=>"cvpadmin",
 #       "firstName"=>nil,
+
 #       "email"=>"jere@arista.com",
 #       "lastAccessed"=>1483726955950,
 #       "userStatus"=>"Enabled",
@@ -150,6 +151,7 @@ class CvpClient
   # @param protocol [String] 'http' or 'https' to use when connecting to the CVP
   # @param port [Int] TCP port to which we should connect is not standard
   # http/https port.
+  # rubocop:disable Metrics/PerceivedComplexity
   def connect(nodes, username, password, connect_timeout = 10,
               protocol = 'http', port = nil)
     @nodes = Array(nodes) # Ensure nodes is always an array
@@ -185,6 +187,7 @@ class CvpClient
     create_session(nil)
     raise CvpLoginError, @error_msg unless @session
   end
+  # rubocop:enable Metrics/PerceivedComplexity
 
   # Send an HTTP GET request with session data and return the response.
   #
@@ -218,22 +221,21 @@ class CvpClient
   # @param :data [Hash] query parameters
   # @param :timeout [Int] Seconds to timeout request. Default: 30
   # @return [JSON] parsed response body
+  # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
   def make_request(method, endpoint, **args)
     log(Logger::DEBUG) { "entering make_request #{method}: #{endpoint}" }
     raise 'No valid session to a CVP node. Use #connect()' unless @session
     url = @url_prefix + endpoint
 
-    # TODO: handle timeout configuration
-    timeout = args.key?(:timeout) ? args[:timeout] : 30
-    # TODO: handle retries
-
     data = args.key?(:data) ? args[:data] : nil
     body = args.key?(:body) ? args[:body] : nil
+    timeout = args.key?(:timeout) ? args[:timeout] : 30
 
     uri = URI(url)
     uri.query = URI.encode_www_form(data) if data
     log(Logger::DEBUG) { 'make_request: ' + uri.request_uri }
     http = Net::HTTP.new(uri.host, uri.port)
+    http.read_timeout = timeout
     if @protocol == 'https'
       http.use_ssl = true
       # TODO: Fixme!!!
@@ -287,7 +289,7 @@ class CvpClient
         retry_count -= 1
         if retry_count > 0
           reset_session
-          error = nil if @session
+          error = nil if @session # rubocop:disable Metrics/BlockNesting
         end
         next
       end
@@ -297,6 +299,7 @@ class CvpClient
 
     response.body ? JSON.parse(response.body) : nil
   end
+  # rubocop:enable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
   # Login to CVP and get a session ID and user information.
   #  If the all_nodes parameter is True then try creating a session
@@ -346,7 +349,7 @@ class CvpClient
     error
   end
 
-  # rubocop:disable Metrics/PerceivedComplexity
+  # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
   def good_resoponse?(response, prefix)
     log(Logger::DEBUG) { 'response_body: ' + response.body.to_s }
     log(Logger::DEBUG) { 'response_headers: ' + response.to_hash.to_s }
@@ -372,12 +375,6 @@ class CvpClient
       # raise CvpRequestError, msg
     end
 
-    # if response.body.include? 'LOG OUT MESSAGE'
-    #  msg = "#{prefix}: Request Error: session logged out"
-    #  log(Logger::ERROR) { msg }
-    #  raise CvpSessionLogOutError, msg
-    # end
-
     log(Logger::DEBUG) { 'Got a response 200 with a body' }
     return unless response.body.to_s.include? 'errorCode'
 
@@ -402,7 +399,7 @@ class CvpClient
     log(Logger::ERROR) { msg }
     raise CvpApiError, msg
   end
-  # rubocop:enable Metrics/PerceivedComplexity
+  # rubocop:enable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
   # Make a POST request to CVP login authentication.
   #   An error can be raised from the post method call or the
@@ -428,7 +425,6 @@ class CvpClient
     log(Logger::DEBUG) { 'Sending login POST' }
     begin
       response = http.request(request)
-      # response = post('/login/authenticate.do', @authdata.to_json)
     rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError,
            Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError,
            Net::ProtocolError => error
