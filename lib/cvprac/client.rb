@@ -272,15 +272,6 @@ class CvpClient
       rescue => error
         log(Logger::ERROR) { "UnknownError: #{error}" }
         raise error
-        # TODO: cvprac line 420
-        # rescue ConnectionError, HTTPError, TooManyRedirects => error
-        #   log(Logger::ERROR) { error }
-        #   next
-        # rescue ReadTimeout, Timeout => error
-        #   log(Logger::DEBUG) { error }
-        #   retry_count -= 1
-        #   error = nil if retry_count > 0
-        #   next
       end
       log(Logger::DEBUG) { 'Request succeeded. Checking response...' }
 
@@ -330,7 +321,6 @@ class CvpClient
       @http = Net::HTTP.new(host, @port)
       if @protocol == 'https'
         @http.use_ssl = true
-        # TODO: Fixme!!!
         @http.verify_mode = @ssl_verify_mode
       end
       error = reset_session
@@ -412,7 +402,7 @@ class CvpClient
 
   # Make a POST request to CVP login authentication.
   #   An error can be raised from the post method call or the
-  #   good_response method call.  Any errors raised would be a good
+  #   good_response? method call.  Any errors raised would be a good
   #   reason not to use this host.
   #
   # @raise SomeError
@@ -428,9 +418,6 @@ class CvpClient
 
     request = Net::HTTP::Post.new(uri.path, @headers)
     request.body = @authdata.to_json
-    # p "Req:\n"
-    # pp(request.to_hash.inspect)
-    # p "\nSend req...\n"
     log(Logger::DEBUG) { 'Sending login POST' }
     begin
       response = http.request(request)
