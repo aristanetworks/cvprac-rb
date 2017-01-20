@@ -80,6 +80,10 @@ class CvpClient
     delete: Net::HTTP::Delete
   }.freeze
 
+  # Maximum number of times to retry a get or post to the same
+  # CVP node.
+  NUM_RETRY_REQUESTS = 3
+
   attr_accessor :agent, :connect_timeout, :headers,
                 :port, :protocol
 
@@ -112,15 +116,16 @@ class CvpClient
     @ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
     @url_prefix = nil
 
-    if filename == :STDOUT
+    if filename == 'STDOUT'
       @logstdout = Logger.new(STDOUT)
-      @logstdout.level = Logger::INFO
+      # @logstdout.level = Logger::INFO
+      @logstdout.level = Logger::DEBUG
     else
       @logfile = Logger.new(filename) unless filename.nil?
     end
     @syslog = Syslog::Logger.new(filename) if syslog
 
-    log(Logger::INFO, 'Initialized-multi')
+    log(Logger::INFO, 'CvpClient initialized')
   end
 
   # Log message to all configured loggers
@@ -129,10 +134,8 @@ class CvpClient
   #                          DEBUG < INFO < WARN < ERROR < FATAL
   # @param msg [String] Message to log
   # @param &block [block] Messages can be passed as a block to delay evaluation
-  def log(severity = Logger::INFO, msg = nil, &msg_block)
-    if block_given?
-      msg = msg_block.call
-    end
+  def log(severity = Logger::INFO, msg = nil)
+    msg = yield if block_given?
     @logstdout.add(severity, msg) if defined? @logstdout
     @logfile.add(severity, msg) if defined? @logfile
     @syslog.add(severity, msg) if defined? @syslog
@@ -150,13 +153,18 @@ class CvpClient
   def connect(nodes, username, password, connect_timeout = 10,
               protocol = 'http', port = nil)
     @nodes = Array(nodes) # Ensure nodes is always an array
+    @node_index = 0
     @node_count = nodes.length
+    @node_last = @node_count - 1
     @node_pool = Enumerator.new do |y|
-      index = 0
-      len = @nodes_count
       loop do
-        y.yield @nodes[index % len]
-        index += 1
+        index = @node_index % @node_count
+        if @node_index == @node_last
+          @node_index = 0
+        else
+          @node_index += 1
+        end
+        y.yield @nodes[index]
       end
     end
     @authdata = { userId: username, password: password }
@@ -169,7 +177,7 @@ class CvpClient
       elsif protocol == 'https'
         port = 443
       else
-        raise "No default port for protocol: #{protocol}"
+        raise ArgumentError, "No default port for protocol: #{protocol}"
       end
     end
     @port = port
@@ -181,33 +189,23 @@ class CvpClient
   # Send an HTTP GET request with session data and return the response.
   #
   # @param endpoint [String] URL endpoint starting after `https://host:port/web`
-  # @param data [Hash] query parameters
+  # @param :data [Hash] query parameters
   # @return [JSON] parsed response body
-  def get(endpoint, data = nil)
-    url = @url_prefix + endpoint
-    make_request(:get, url, data)
+  def get(endpoint, **args)
+    data = args.key?(:data) ? args[:data] : nil
+    make_request(:get, endpoint, data: data)
   end
 
   # Send an HTTP POST request with session data and return the response.
   #
   # @param endpoint [String] URL endpoint starting after `https://host:port/web`
-  # @param body [JSON] JSON body to post
+  # @param :body [JSON] JSON body to post
+  # @param :data [Hash] query parameters
   # @return [Net::HTTP Response]
-  def post(endpoint, body)
-    url = @url_prefix + endpoint
-    uri = URI(url)
-    http = Net::HTTP.new(uri.host, uri.port)
-    if @protocol == 'https'
-      http.use_ssl = true
-      http.verify_mode = @ssl_verify_mode
-    end
-
-    request = Net::HTTP::Post.new(uri.path, @headers)
-    request.body = body
-    # p "Req:\n"
-    # pp(request.to_hash.inspect)
-    # p "\nSend req...\n"
-    http.request(request)
+  def post(endpoint, **args)
+    data = args.key?(:data) ? args[:data] : nil
+    body = args.key?(:body) ? args[:body] : nil
+    make_request(:post, endpoint, data: data, body: body)
   end
 
   private
@@ -216,11 +214,25 @@ class CvpClient
   #
   # @param method [Symbol] Reuqest method: :get, :post, :head, etc.
   # @param url [String] Full URL to the endpoint
-  # @param data [Hash] query parameters
+  # @param :body [JSON] JSON body to post
+  # @param :data [Hash] query parameters
+  # @param :timeout [Int] Seconds to timeout request. Default: 30
   # @return [JSON] parsed response body
-  def make_request(method, url, data = nil, _timeout = 30)
+  def make_request(method, endpoint, **args)
+    log(Logger::DEBUG) { "entering make_request #{method}: #{endpoint}" }
+    raise 'No valid session to a CVP node. Use #connect()' unless @session
+    url = @url_prefix + endpoint
+
+    # TODO: handle timeout configuration
+    timeout = args.key?(:timeout) ? args[:timeout] : 30
+    # TODO: handle retries
+
+    data = args.key?(:data) ? args[:data] : nil
+    body = args.key?(:body) ? args[:body] : nil
+
     uri = URI(url)
     uri.query = URI.encode_www_form(data) if data
+    log(Logger::DEBUG) { 'make_request: ' + uri.request_uri }
     http = Net::HTTP.new(uri.host, uri.port)
     if @protocol == 'https'
       http.use_ssl = true
@@ -228,19 +240,62 @@ class CvpClient
       http.verify_mode = @ssl_verify_mode
     end
 
-    request = METHOD_LIST[method].new(uri.request_uri, @headers)
-    response = http.request(request)
+    error = nil
+    retry_count = NUM_RETRY_REQUESTS
+    node_count = @node_count
+    while node_count > 0
+      unless error.nil?
+        log(Logger::DEBUG) { "make_request: error not nil: #{error}" }
+        node_count -= 1
+        raise error if node_count.zero?
+        create_session
 
-    unless response.code.to_i == 200
-      msg = response.body
-      if response.code.to_i == 400
-        title = response.body.match(%r{<h1>(.*?)</h1>})[1]
-        msg = title if title
+        raise error unless @session
+        retry_count = NUM_RETRY_REQUESTS
+        error = nil
       end
-      log(Logger::ERROR) { 'ErrorCode: ' + reponse.code + ' - ' + msg }
-      raise CvpRequestError.new(response.code, msg)
+
+      begin
+        log(Logger::DEBUG) { 'make_request: ' + uri.request_uri }
+        request = METHOD_LIST[method].new(uri.request_uri, @headers)
+        request.body = body if body
+        response = http.request(request)
+      rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError,
+             Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError,
+             Net::ProtocolError => error
+        log(Logger::ERROR) { "Request failed: #{error}" }
+        raise CvpRequestError, error
+      rescue => error
+        log(Logger::ERROR) { "UnknownError: #{error}" }
+        raise error
+        # TODO: cvprac line 420
+        # rescue ConnectionError, HTTPError, TooManyRedirects => error
+        #   log(Logger::ERROR) { error }
+        #   next
+        # rescue ReadTimeout, Timeout => error
+        #   log(Logger::DEBUG) { error }
+        #   retry_count -= 1
+        #   error = nil if retry_count > 0
+        #   next
+      end
+      log(Logger::DEBUG) { 'Request succeeded. Checking response...' }
+
+      begin
+        good_resoponse?(response, "#{method} #{uri.request_uri}:")
+      rescue CvpSessionLogOutError => error
+        log(Logger::DEBUG) { "Session timed out... retrying: #{error}" }
+        retry_count -= 1
+        if retry_count > 0
+          reset_session
+          error = nil if @session
+        end
+        next
+      end
+      log(Logger::DEBUG) { 'make_request completed.' }
+      break
     end
-    JSON.parse(response.body)
+
+    response.body ? JSON.parse(response.body) : nil
   end
 
   # Login to CVP and get a session ID and user information.
@@ -283,8 +338,6 @@ class CvpClient
 
     begin
       login
-      # rescue
-      # rescue Exception => error
     rescue CvpApiError, CvpRequestError, CvpSessionLogOutError => error
       log(Logger::ERROR) { error }
       # Invalidate the session due to error
@@ -294,21 +347,41 @@ class CvpClient
   end
 
   # rubocop:disable Metrics/PerceivedComplexity
-  def good_response?(response, prefix)
-    if response.code.to_i != 200
-      msg = "#{prefix}: Request Error: #{response.reason}"
-      log(Logger::ERROR) { msg }
-      raise CvpRequestError, msg
+  def good_resoponse?(response, prefix)
+    log(Logger::DEBUG) { 'response_body: ' + response.body.to_s }
+    log(Logger::DEBUG) { 'response_headers: ' + response.to_hash.to_s }
+    if response.respond_to?('reason')
+      log(Logger::DEBUG) { 'response_reason: ' + response.reason }
     end
 
-    if response.body.include? 'LOG OUT MESSAGE'
+    if response.code.to_i == 302
       msg = "#{prefix}: Request Error: session logged out"
       log(Logger::ERROR) { msg }
       raise CvpSessionLogOutError, msg
+    elsif response.code.to_i != 200
+      msg = "#{prefix}: Request Error"
+      # msg = response.body
+      if response.code.to_i == 400
+        title = response.body.match(%r{<h1>(.*?)</h1>})[1]
+        msg = "#{prefix}: #{title}" if title
+      end
+      log(Logger::ERROR) { 'ErrorCode: ' + response.code + ' - ' + msg }
+      msg += " Reason: #{response.reason}" if response.respond_to?('reason')
+      raise CvpRequestError.new(response.code, msg)
+      # log(Logger::ERROR) { msg }
+      # raise CvpRequestError, msg
     end
 
+    # if response.body.include? 'LOG OUT MESSAGE'
+    #  msg = "#{prefix}: Request Error: session logged out"
+    #  log(Logger::ERROR) { msg }
+    #  raise CvpSessionLogOutError, msg
+    # end
+
+    log(Logger::DEBUG) { 'Got a response 200 with a body' }
     return unless response.body.to_s.include? 'errorCode'
 
+    log(Logger::DEBUG) { 'Body has an errorCode' }
     body = JSON.parse(response.body)
     if body.key?('errorMessage')
       msg = "errorCode: #{body['errorCode']}: #{body['errorMessage']}"
@@ -333,15 +406,42 @@ class CvpClient
 
   # Make a POST request to CVP login authentication.
   #   An error can be raised from the post method call or the
-  #   _is_good_response method call.  Any errors raised would be a good
+  #   good_resoponse method call.  Any errors raised would be a good
   #   reason not to use this host.
   #
   # @raise SomeError
   def login
     @headers.delete('APP_SESSION_ID')
-    response = post('/login/authenticate.do', @authdata.to_json)
+    url = @url_prefix + '/login/authenticate.do'
+    uri = URI(url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    if @protocol == 'https'
+      http.use_ssl = true
+      http.verify_mode = @ssl_verify_mode
+    end
 
-    good_response?(response, 'Authenticate:')
+    request = Net::HTTP::Post.new(uri.path, @headers)
+    request.body = @authdata.to_json
+    # p "Req:\n"
+    # pp(request.to_hash.inspect)
+    # p "\nSend req...\n"
+    log(Logger::DEBUG) { 'Sending login POST' }
+    begin
+      response = http.request(request)
+      # response = post('/login/authenticate.do', @authdata.to_json)
+    rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError,
+           Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError,
+           Net::ProtocolError => error
+      log(Logger::ERROR) { 'Login failed: ' + error.to_s }
+      raise CvpLoginError, error.to_s
+    rescue => error
+      log(Logger::ERROR) { 'Login failed UnkReason: ' + error.to_s }
+      raise CvpLoginError, error.to_s
+    end
+    log(Logger::DEBUG) { 'Sent login POST' }
+
+    good_resoponse?(response, 'Authenticate:')
+    log(Logger::DEBUG) { 'login checked response' }
 
     response.get_fields('Set-Cookie').each do |value|
       @cookies.parse(value, @url_prefix)
@@ -350,5 +450,6 @@ class CvpClient
     body = JSON.parse(response.body)
     @session = @headers['APP_SESSION_ID'] = body['sessionId']
     @headers['Cookie'] = HTTP::Cookie.cookie_value(@cookies.cookies)
+    log(Logger::DEBUG) { 'login SUCCESS' }
   end
 end
