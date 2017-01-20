@@ -105,8 +105,10 @@ RSpec.describe CvpClient do
 
   describe '#connect' do
     context 'with defaults (http)' do
-      subject { cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123') }
-      it { is_expected.to be_nil }
+      it 'returns nil' do
+        expect(cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123'))
+          .to be_nil
+      end
       before(:each) do
         cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123')
       end
@@ -258,8 +260,11 @@ RSpec.describe CvpClient do
                                 'content-type' => content_type })
       end
 
-      subject { cvp.get('/cvpInfo/getCvpInfo.do') }
-      it { is_expected.to eq(JSON.parse(body)) }
+      it 'returns a parsable JSON response' do
+        response = cvp.get('/cvpInfo/getCvpInfo.do')
+        expect(response).to be_kind_of(Hash)
+        expect(response).to eq(JSON.parse(body))
+      end
     end
 
     context 'HTTPS with parameters (Example: getUsers)' do
@@ -301,24 +306,23 @@ RSpec.describe CvpClient do
                                 'content-type' => content_type })
       end
 
-      subject do
-        cvp.get('/user/getUsers.do',
-                data: { queryparam: nil, startIndex: 0, endIndex: 0 })
+      it 'returns a parsable JSON response' do
+        response = cvp.get('/user/getUsers.do',
+                           data: { queryparam: nil,
+                                   startIndex: 0, endIndex: 0 })
+        expect(response).to be_kind_of(Hash)
+        expect(response).to eq(JSON.parse(body))
       end
-      it { is_expected.to eq(JSON.parse(body)) }
     end
 
     context 'timeout' do
-      skip
       # Verbose debug settings
-      let(:cvp2) { CvpClient.new('cvprac', true, 'STDOUT') }
+      # let(:cvp2) { CvpClient.new('cvprac', true, 'STDOUT') }
+      let(:cvp2) { CvpClient.new }
       before(:each) do
         cvp2.connect(['cvp1.example.com'], 'cvpadmin', 'idontknow')
         stub_request(:get, 'http://cvp1.example.com/web/timeout.do')
-          .to_timeout
-          .to_timeout
-          .to_timeout
-          .to_timeout
+          .to_timeout.times(4).then
           .to_return(status: 200,
                      body: '{"result": "success"}')
       end
@@ -327,7 +331,7 @@ RSpec.describe CvpClient do
         expect { cvp2.get('/timeout.do') }.to raise_error(CvpRequestError)
         expect { cvp2.get('/timeout.do') }.to raise_error(CvpRequestError)
         expect { cvp2.get('/timeout.do') }.to raise_error(CvpRequestError)
-        expect { cvp2.get('/timeout.do').to eq(result: 'success') }
+        expect(cvp2.get('/timeout.do')).to eq('result' => 'success')
       end
     end
 
@@ -353,10 +357,10 @@ RSpec.describe CvpClient do
       end
     end
 
-    context 'with session timeout (302 redirect to login)' do
-      skip
+    context 'with session logged out (302 redirect to login)' do
+      WebMock.reset!
       let(:body) { %({ "version": "2016.1.1" }) }
-      let(:login_timeout) do
+      let(:session_logged_out) do
         { status: 302,
           headers: { 'date' => 'Mon, 09 Jan 2017 14:32:30 GMT',
                      'server' => 'nginx/1.8.1',
@@ -374,21 +378,56 @@ RSpec.describe CvpClient do
                      'content-length' => '22',
                      'content-type' => content_type } }
       end
+      # let(:cvp3) { CvpClient.new('cvprac', true, 'STDOUT') }
+      let(:cvp3) { CvpClient.new }
+      let(:auth_url) { 'cvp1.example.com/web/login/authenticate.do' }
+      let(:test_url) { 'cvp1.example.com/web/cvpInfo/getCvpInfo.do' }
+      before(:each) do
+        WebMock.reset!
+        stub_request(:post, 'http://cvp1.example.com/web/login/authenticate.do')
+          .with(headers: dflt_headers)
+          .to_return(status: 200,
+                     body: login_body,
+                     headers: { 'set-cookie' => set_cookie })
+      end
 
-      let(:cvp3) { CvpClient.new('cvprac', true, 'STDOUT') }
-      before do
+      it 'succeeds after 2 re-login + retry attempts' do
         # Return a redirect to login, then return a regular response
-        stub_request(:get, 'http://cvp1.example.com/web/cvpInfo/getCvpInfo.do')
+        stub_request(:get, test_url)
           .with(headers: good_headers)
-          .to_return(login_timeout, normal)
+          .to_return(session_logged_out).times(2).then
+          .to_return(normal)
         cvp3.connect(['cvp1.example.com'], 'cvpadmin', 'arista123')
+
+        expect(WebMock).to have_requested(:post, auth_url)
+          .once
+        expect(cvp3.get('/cvpInfo/getCvpInfo.do')).to eq(JSON.parse(body))
+        # Original + 2 additional tries
+        expect(WebMock).to have_requested(:post, auth_url)
+          .times(3)
+        # Original + 1 unsuccessful retry + successful retry
+        expect(WebMock).to have_requested(:get, test_url)
+          .times(3)
       end
 
-      it 'raises CvpRequestError then passes' do
-        expect { cvp2.get('/cvpInfo/getCvpInfo.do').to eq(JSON.parse(body)) }
+      it 'raises CvpSessionLogOutError after 3 attempts' do
+        # continuously return a redirect to login
+        stub_request(:get, test_url)
+          .with(headers: good_headers)
+          .to_return(session_logged_out)
+        cvp3.connect(['cvp1.example.com'], 'cvpadmin', 'arista123')
+        expect(WebMock).to have_requested(:post, auth_url)
+          .times(1)
+        expect { cvp3.get('/cvpInfo/getCvpInfo.do') }
+          .to raise_error(CvpSessionLogOutError,
+                          /No more retries/)
+        # Original + 2 additional tries
+        expect(WebMock).to have_requested(:post, auth_url)
+          .times(3)
+        # Original + 2 retries
+        expect(WebMock).to have_requested(:get, test_url)
+          .times(3)
       end
-      # subject { cvp.get('/cvpInfo/getCvpInfo.do') }
-      # it { is_expected.to eq(JSON.parse(body)) }
     end
   end
 
@@ -416,8 +455,11 @@ RSpec.describe CvpClient do
     end
 
     context 'basic' do
-      subject { cvp.post('/test/endpoint.do', body: '{"some":"data"}') }
-      it { is_expected.to eq(JSON.parse(return_body)) }
+      it 'returns valid data' do
+        response = cvp.post('/test/endpoint.do', body: '{"some":"data"}')
+        expect(response).to be_kind_of(Hash)
+        expect(response).to eq(JSON.parse(return_body))
+      end
     end
   end
 end
