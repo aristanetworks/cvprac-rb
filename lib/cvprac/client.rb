@@ -223,7 +223,10 @@ class CvpClient
   # @return [JSON] parsed response body
   # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
   def make_request(method, endpoint, **args)
-    log(Logger::DEBUG) { "entering make_request #{method}: #{endpoint}" }
+    log(Logger::DEBUG) do
+      "entering make_request #{method} "\
+                         "endpoint: #{endpoint}"
+    end
     raise 'No valid session to a CVP node. Use #connect()' unless @session
     url = @url_prefix + endpoint
 
@@ -233,12 +236,11 @@ class CvpClient
 
     uri = URI(url)
     uri.query = URI.encode_www_form(data) if data
-    log(Logger::DEBUG) { 'make_request: ' + uri.request_uri }
     http = Net::HTTP.new(uri.host, uri.port)
     http.read_timeout = timeout
     if @protocol == 'https'
       http.use_ssl = true
-      # TODO: Fixme!!!
+      # TODO: Parameterize and doc this!!!
       http.verify_mode = @ssl_verify_mode
     end
 
@@ -283,13 +285,22 @@ class CvpClient
       log(Logger::DEBUG) { 'Request succeeded. Checking response...' }
 
       begin
-        good_resoponse?(response, "#{method} #{uri.request_uri}:")
+        good_response?(response, "#{method} #{uri.request_uri}:")
       rescue CvpSessionLogOutError => error
-        log(Logger::DEBUG) { "Session timed out... retrying: #{error}" }
+        log(Logger::DEBUG) { "Session logged out: #{error}" }
         retry_count -= 1
         if retry_count > 0
+          log(Logger::DEBUG) do
+            'Session logged out... resetting and retrying '\
+                               "#{error}"
+          end
           reset_session
           error = nil if @session # rubocop:disable Metrics/BlockNesting
+        else
+          msg = 'Session logged out. Failed to re-login. '\
+                "No more retries: #{error}"
+          log(Logger::ERROR) { msg }
+          raise CvpSessionLogOutError, msg
         end
         next
       end
@@ -350,20 +361,20 @@ class CvpClient
   end
 
   # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
-  def good_resoponse?(response, prefix)
-    log(Logger::DEBUG) { 'response_body: ' + response.body.to_s }
+  def good_response?(response, prefix = '')
+    log(Logger::DEBUG) { "response_code: #{response.code}" }
     log(Logger::DEBUG) { 'response_headers: ' + response.to_hash.to_s }
+    log(Logger::DEBUG) { "response_body: #{response.body}" }
     if response.respond_to?('reason')
-      log(Logger::DEBUG) { 'response_reason: ' + response.reason }
+      log(Logger::DEBUG) { "response_reason: #{response.reason}" }
     end
 
     if response.code.to_i == 302
-      msg = "#{prefix}: Request Error: session logged out"
-      log(Logger::ERROR) { msg }
+      msg = "#{prefix} Notice302: session logged out"
+      log(Logger::DEBUG) { msg }
       raise CvpSessionLogOutError, msg
     elsif response.code.to_i != 200
       msg = "#{prefix}: Request Error"
-      # msg = response.body
       if response.code.to_i == 400
         title = response.body.match(%r{<h1>(.*?)</h1>})[1]
         msg = "#{prefix}: #{title}" if title
@@ -371,8 +382,6 @@ class CvpClient
       log(Logger::ERROR) { 'ErrorCode: ' + response.code + ' - ' + msg }
       msg += " Reason: #{response.reason}" if response.respond_to?('reason')
       raise CvpRequestError.new(response.code, msg)
-      # log(Logger::ERROR) { msg }
-      # raise CvpRequestError, msg
     end
 
     log(Logger::DEBUG) { 'Got a response 200 with a body' }
@@ -403,7 +412,7 @@ class CvpClient
 
   # Make a POST request to CVP login authentication.
   #   An error can be raised from the post method call or the
-  #   good_resoponse method call.  Any errors raised would be a good
+  #   good_response method call.  Any errors raised would be a good
   #   reason not to use this host.
   #
   # @raise SomeError
@@ -436,7 +445,7 @@ class CvpClient
     end
     log(Logger::DEBUG) { 'Sent login POST' }
 
-    good_resoponse?(response, 'Authenticate:')
+    good_response?(response, 'Authenticate:')
     log(Logger::DEBUG) { 'login checked response' }
 
     response.get_fields('Set-Cookie').each do |value|
