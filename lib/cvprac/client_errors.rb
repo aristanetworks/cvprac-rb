@@ -54,7 +54,7 @@ end
 # Session to the CVP node(s) has been logged out
 class CvpSessionLogOutError < StandardError
   def initialize(msg = 'Unknown error')
-    super("ERROR: #{msg}")
+    super(msg)
   end
 end
 
