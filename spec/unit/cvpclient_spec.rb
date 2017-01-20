@@ -32,6 +32,7 @@ RSpec.describe CvpClient do
   let(:cvp) { CvpClient.new }
   # Use for debugging
   # let(:cvp) { CvpClient.new('cvprac', true, 'STDOUT') }
+
   let(:accept_encoding) { 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3' }
   let(:user_agent) { 'rspec (x86_64-darwin14) cvprac-rb/0.1.0' }
   let(:content_type) { 'application/json;charset=UTF-8' }
@@ -177,8 +178,6 @@ RSpec.describe CvpClient do
                            '"errorMessage":"Unauthorized User"}',
                      headers: { 'set-cookie' => set_cookie_unauth })
       end
-      # subject { cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow') }
-      # it { is_expected.to raise_error(CvpApiError) }
       it 'raises error' do
         expect { cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow') }
           .to raise_error(CvpLoginError)
@@ -199,8 +198,6 @@ RSpec.describe CvpClient do
                            '"errorMessage":"Unauthorized User"}',
                      headers: { 'set-cookie' => set_cookie_unauth })
       end
-      # subject { cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow') }
-      # it { is_expected.to raise_error(CvpApiError) }
       it 'raises error' do
         expect do
           cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow', 10, 'ftp')
@@ -229,7 +226,6 @@ RSpec.describe CvpClient do
       stub_request(:post, 'http://cvp1.example.com/web/login/authenticate.do')
         .with(headers: dflt_headers)
         .to_return(status: 200,
-                   # body: "#{login_body}",
                    body: login_body,
                    headers: { 'set-cookie' => set_cookie })
 
@@ -378,7 +374,6 @@ RSpec.describe CvpClient do
                      'content-length' => '22',
                      'content-type' => content_type } }
       end
-      # let(:cvp3) { CvpClient.new('cvprac', true, 'STDOUT') }
       let(:cvp3) { CvpClient.new }
       let(:auth_url) { 'cvp1.example.com/web/login/authenticate.do' }
       let(:test_url) { 'cvp1.example.com/web/cvpInfo/getCvpInfo.do' }
