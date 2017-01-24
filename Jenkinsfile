@@ -4,7 +4,7 @@
  * Jenkinsfile for cvprac rubygem
  */
 
-node() {
+node('puppet') {
 
     currentBuild.result = "SUCCESS"
 
@@ -14,10 +14,14 @@ node() {
 
             checkout scm
             sh """
-                source ~/.rvm/scripts/rvm
-                rvm list
-                #rvm use
+                #/usr/local/rvm/bin/rvm get stable --auto-dotfiles
+                #source ~/.rvm/scripts/rvm
+                source /usr/local/rvm/scripts/rvm
+                /usr/local/rvm/bin/rvm list
+                /usr/local/rvm/bin/rvm use 2.3.3
                 gem install bundler --no-ri --no-rdoc
+                which ruby
+                ruby --version
                 bin/setup
             """
         }
