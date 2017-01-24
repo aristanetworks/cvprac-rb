@@ -29,5 +29,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 module Cvprac
+  # Cvprac Gem version
   VERSION = '0.1.0'.freeze
 end
