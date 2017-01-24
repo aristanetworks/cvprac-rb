@@ -6,7 +6,6 @@ require 'github_changelog_generator/task'
 require 'rspec/core/rake_task'
 require 'rubocop/rake_task'
 require 'yard'
-#require 'yard/rake/yardoc_task'
 
 $LOAD_PATH.unshift File.expand_path('../lib', __FILE__)
 require 'cvprac/version'

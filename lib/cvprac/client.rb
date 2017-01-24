@@ -30,7 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # rubocop:disable Metrics/ClassLength
-# rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/ParameterLists
+# rubocop:disable Metrics/MethodLength, Metrics/AbcSize
 
 require 'cgi'
 require 'http-cookie'
@@ -110,7 +110,8 @@ class CvpClient
                 :port, :protocol, :ssl_verify_mode
 
   # @!attribute [r] cookies
-  #   @return [HTTP::CookieJar] HTTP cookies sent with each authenticated request
+  #   @return [HTTP::CookieJar] HTTP cookies sent with each authenticated
+  #   request
   # @!attribute [r] headers
   #   @return [Hash] HTTP headers sent with each request
   # @!attribute [r] nodes
@@ -172,7 +173,7 @@ class CvpClient
     @syslog.add(severity, msg) if defined? @syslog
   end
 
-  # rubocop:disable Metrics/PerceivedComplexity
+  # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
   # Connect to one or more CVP nodes.
   #
@@ -188,21 +189,13 @@ class CvpClient
   # @option opts [Fixnum] :port (nil) TCP port to which we should connect is
   #   not standard http/https port.
   # @option opts [Bool] :verify_ssl (false) Verify CVP SSL certificate?
-  #   Requires that a valid (non-self-signed) certificate be installed on the CloudVision node(s).
+  #   Requires that a valid (non-self-signed) certificate be installed on the
+  #   CloudVision node(s).
   def connect(nodes, username, password, **opts)
-    #def connect(nodes, username, password,
-    #            opts = {connect_timeout: 10,
-    #                    protocol: 'https',
-    #                    port: nil,
-    #                    verify_ssl: false})
-    #connect_timeout = opts.key?(:connect_timeout) ? opts[:connect_timeout] : 10
-    #protocol = opts.key?(:protocol) ? opts[:protocol] : 'https'
-    #port = opts.key?(:port) ? opts[:port] : nil
-    #verify_ssl = opts.key?(:verify_ssl) ? opts[:verify_ssl] : false
-    opts = {connect_timeout: 10,
-            protocol: 'https',
-            port: nil,
-            verify_ssl: false}.merge(opts)
+    opts = { connect_timeout: 10,
+             protocol: 'https',
+             port: nil,
+             verify_ssl: false }.merge(opts)
     connect_timeout = opts[:connect_timeout]
     protocol = opts[:protocol]
     port = opts[:port]
@@ -246,7 +239,7 @@ class CvpClient
     create_session(nil)
     raise CvpLoginError, @error_msg unless @session
   end
-  # rubocop:enable Metrics/PerceivedComplexity
+  # rubocop:enable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
   # @!group REST methods
 
@@ -301,7 +294,7 @@ class CvpClient
     raise 'No valid session to a CVP node. Use #connect()' unless @session
     url = @url_prefix + endpoint
 
-    opts = {data: nil, body: nil, timeout: 30}.merge(opts)
+    opts = { data: nil, body: nil, timeout: 30 }.merge(opts)
 
     uri = URI(url)
     uri.query = URI.encode_www_form(opts[:data]) if opts[:data]
