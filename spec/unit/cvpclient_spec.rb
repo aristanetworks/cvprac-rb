@@ -34,13 +34,11 @@ RSpec.describe CvpClient do
   # let(:cvp) { CvpClient.new('cvprac', true, 'STDOUT') }
 
   let(:accept_encoding) { 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3' }
-  let(:user_agent) { 'rspec (x86_64-darwin14) cvprac-rb/0.1.0' }
   let(:content_type) { 'application/json;charset=UTF-8' }
   let(:dflt_headers) do
     { 'Accept' => 'application/json',
       'Accept-Encoding' => accept_encoding,
-      'Content-Type' => 'application/json',
-      'User-Agent' => user_agent }
+      'Content-Type' => 'application/json' }
   end
   let(:session_id) { 'session_1864826_14590036948865688' }
   let(:set_cookie) do
@@ -77,8 +75,7 @@ RSpec.describe CvpClient do
     { 'Accept' => 'application/json',
       'Accept-Encoding' => accept_encoding,
       'Content-Type' => 'application/json',
-      'Cookie' => good_cookie,
-      'User-Agent' => user_agent }
+      'Cookie' => good_cookie }
   end
 
   let(:login_body) { fixture('login_body') }
@@ -142,7 +139,7 @@ RSpec.describe CvpClient do
                      headers: { 'set-cookie' => set_cookie })
 
         cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123',
-                    {:protocol => 'http'})
+                    protocol: 'http')
       end
       it 'sets session data' do
         expect(cvp.instance_variable_get(:@session)).not_to be_nil
@@ -201,7 +198,7 @@ RSpec.describe CvpClient do
       it 'raises error' do
         expect do
           cvp.connect(['cvp1.example.com'], 'cvpadmin', 'idontknow',
-                      {:protocol => 'ftp'})
+                      protocol: 'ftp')
         end
           .to raise_error(ArgumentError)
       end
@@ -291,7 +288,7 @@ RSpec.describe CvpClient do
       end
       before do
         cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123',
-                    {:protocol =>'https'})
+                    protocol: 'https')
         stub_request(:get, 'https://cvp1.example.com/web/user/getUsers.do?endIndex=0&queryparam&startIndex=0')
           .with(headers: good_headers)
           .to_return(status: 200,
