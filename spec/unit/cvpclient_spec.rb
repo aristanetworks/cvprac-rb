@@ -84,7 +84,7 @@ RSpec.describe CvpClient do
   let(:login_body) { fixture('login_body') }
 
   before(:each) do
-    stub_request(:post, 'http://cvp1.example.com/web/login/authenticate.do')
+    stub_request(:post, 'https://cvp1.example.com/web/login/authenticate.do')
       .with(headers: dflt_headers)
       .to_return(status: 200,
                  body: login_body,
@@ -105,7 +105,7 @@ RSpec.describe CvpClient do
   end
 
   describe '#connect' do
-    context 'with defaults (http)' do
+    context 'with defaults (https)' do
       it 'returns nil' do
         expect(cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123'))
           .to be_nil
@@ -119,10 +119,10 @@ RSpec.describe CvpClient do
         expect(cvp.instance_variable_get(:@session)).to eq(session_id)
       end
       it 'sets the protocol' do
-        expect(cvp.protocol).to eq('http')
+        expect(cvp.protocol).to eq('https')
       end
       it 'sets the port' do
-        expect(cvp.port).to eq(80)
+        expect(cvp.port).to eq(443)
       end
       it 'sets the connect_timeout' do
         expect(cvp.connect_timeout).to eq(10)
@@ -133,26 +133,26 @@ RSpec.describe CvpClient do
       end
     end
 
-    context 'using HTTPS' do
+    context 'using HTTP' do
       before(:each) do
-        stub_request(:post, 'https://cvp1.example.com/web/login/authenticate.do')
+        stub_request(:post, 'http://cvp1.example.com/web/login/authenticate.do')
           .with(headers: dflt_headers)
           .to_return(status: 200,
                      body: login_body,
                      headers: { 'set-cookie' => set_cookie })
 
         cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123',
-                    10, 'https')
+                    {:protocol => 'http'})
       end
       it 'sets session data' do
         expect(cvp.instance_variable_get(:@session)).not_to be_nil
         expect(cvp.instance_variable_get(:@session)).to eq(session_id)
       end
       it 'sets the protocol' do
-        expect(cvp.protocol).to eq('https')
+        expect(cvp.protocol).to eq('http')
       end
       it 'sets the port' do
-        expect(cvp.port).to eq(443)
+        expect(cvp.port).to eq(80)
       end
       it 'sets the connect_timeout' do
         expect(cvp.connect_timeout).to eq(10)
@@ -170,7 +170,7 @@ RSpec.describe CvpClient do
                                  ' Path=/web/; HttpOnly']
       end
       before(:each) do
-        stub_request(:post, 'http://cvp2.example.com/web/login/authenticate.do')
+        stub_request(:post, 'https://cvp2.example.com/web/login/authenticate.do')
           .with(body: '{"userId":"cvpadmin","password":"idontknow"}',
                 headers: dflt_headers)
           .to_return(status: 200,
@@ -190,7 +190,7 @@ RSpec.describe CvpClient do
                                  ' Path=/web/; HttpOnly']
       end
       before(:each) do
-        stub_request(:post, 'http://cvp2.example.com/web/login/authenticate.do')
+        stub_request(:post, 'https://cvp2.example.com/web/login/authenticate.do')
           .with(body: '{"userId":"cvpadmin","password":"idontknow"}',
                 headers: dflt_headers)
           .to_return(status: 200,
@@ -200,7 +200,8 @@ RSpec.describe CvpClient do
       end
       it 'raises error' do
         expect do
-          cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow', 10, 'ftp')
+          cvp.connect(['cvp1.example.com'], 'cvpadmin', 'idontknow',
+                      {:protocol => 'ftp'})
         end
           .to raise_error(ArgumentError)
       end
@@ -208,13 +209,13 @@ RSpec.describe CvpClient do
 
     context 'after timeout (execution expired)' do
       before(:each) do
-        stub_request(:post, 'http://cvp2.example.com/web/login/authenticate.do')
+        stub_request(:post, 'https://cvp2.example.com/web/login/authenticate.do')
           .with(body: '{"userId":"cvpadmin","password":"idontknow"}',
                 headers: dflt_headers)
           .to_timeout
       end
       it 'raises error' do
-        expect { cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow', 1) }
+        expect { cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow') }
           .to raise_error(CvpLoginError)
       end
     end
@@ -233,7 +234,6 @@ RSpec.describe CvpClient do
       stub_request(:post, 'https://cvp1.example.com/web/login/authenticate.do')
         .with(headers: dflt_headers)
         .to_return(status: 200,
-                   # body: "#{login_body}",
                    body: login_body,
                    headers: { 'set-cookie' => set_cookie })
     end
@@ -245,7 +245,7 @@ RSpec.describe CvpClient do
     context 'HTTP without parameters (Example: getCvpInfo)' do
       let(:body) { %({ "version": "2016.1.1" }) }
       before do
-        stub_request(:get, 'http://cvp1.example.com/web/cvpInfo/getCvpInfo.do')
+        stub_request(:get, 'https://cvp1.example.com/web/cvpInfo/getCvpInfo.do')
           .with(headers: good_headers)
           .to_return(status: 200,
                      body: body,
@@ -290,7 +290,8 @@ RSpec.describe CvpClient do
                           })
       end
       before do
-        cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123', 10, 'https')
+        cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123',
+                    {:protocol =>'https'})
         stub_request(:get, 'https://cvp1.example.com/web/user/getUsers.do?endIndex=0&queryparam&startIndex=0')
           .with(headers: good_headers)
           .to_return(status: 200,
@@ -317,7 +318,7 @@ RSpec.describe CvpClient do
       let(:cvp2) { CvpClient.new }
       before(:each) do
         cvp2.connect(['cvp1.example.com'], 'cvpadmin', 'idontknow')
-        stub_request(:get, 'http://cvp1.example.com/web/timeout.do')
+        stub_request(:get, 'https://cvp1.example.com/web/timeout.do')
           .to_timeout.times(4).then
           .to_return(status: 200,
                      body: '{"result": "success"}')
@@ -335,7 +336,7 @@ RSpec.describe CvpClient do
       let(:body) { fixture('404_response') }
 
       before do
-        stub_request(:get, 'http://cvp1.example.com/web/user/getUs.do')
+        stub_request(:get, 'https://cvp1.example.com/web/user/getUs.do')
           .with(headers: good_headers)
           .to_return(status: 400,
                      body: body,
@@ -375,11 +376,11 @@ RSpec.describe CvpClient do
                      'content-type' => content_type } }
       end
       let(:cvp3) { CvpClient.new }
-      let(:auth_url) { 'cvp1.example.com/web/login/authenticate.do' }
-      let(:test_url) { 'cvp1.example.com/web/cvpInfo/getCvpInfo.do' }
+      let(:auth_url) { 'https://cvp1.example.com/web/login/authenticate.do' }
+      let(:test_url) { 'https://cvp1.example.com/web/cvpInfo/getCvpInfo.do' }
       before(:each) do
         WebMock.reset!
-        stub_request(:post, 'http://cvp1.example.com/web/login/authenticate.do')
+        stub_request(:post, 'https://cvp1.example.com/web/login/authenticate.do')
           .with(headers: dflt_headers)
           .to_return(status: 200,
                      body: login_body,
@@ -430,14 +431,14 @@ RSpec.describe CvpClient do
     let(:return_body) { '{"some":"data"}' }
     before(:each) do
       # HTTP Login
-      stub_request(:post, 'http://cvp1.example.com/web/login/authenticate.do')
+      stub_request(:post, 'https://cvp1.example.com/web/login/authenticate.do')
         .with(headers: dflt_headers)
         .to_return(status: 200,
                    body: login_body,
                    headers: { 'set-cookie' => set_cookie })
 
       # POST responder
-      stub_request(:post, 'http://cvp1.example.com/web/test/endpoint.do')
+      stub_request(:post, 'https://cvp1.example.com/web/test/endpoint.do')
         .with(body: '{"some":"data"}',
               headers: good_headers)
         .to_return(status: 200,
