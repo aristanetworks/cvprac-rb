@@ -29,8 +29,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# @author Jere Julian <jere@arista.com>
-#
 # rubocop:disable Metrics/ClassLength
 # rubocop:disable Metrics/MethodLength, Metrics/AbcSize, Metrics/ParameterLists
 
@@ -42,27 +40,26 @@ require 'net/http'
 require 'pp'
 require 'syslog/logger'
 
-# Establishes and maintains connections with CVP node(s)
+# Provide simplified REST methods to access Arista CloudVision
 #
-# @example
-#   $ bundle exec pry
-#   [1] pry(main)> require 'cvprac'
-#   => true
-#   [2] pry(main)> cvp = CvpClient.new
-#   => #<CvpClient:0x007fb0aa36c970>
-#   [3] pry(main)> cvp.connect(['cvp1', 'cvp2', 'cvp3'], \
-#                             'cvpadmin', 'arista123')
-#   => nil
-#   [4] pry(main)> result = cvp.get('/user/getUsers.do', {queryparam: nil, \
-#                                   startIndex: 0, endIndex: 0})
-#   [5] pry(main)> require 'pp'
-#   [6] pry(main)> pp(result)
-#   => {"total"=>1,
+# Establish and maintain connections with Arista CloudVision servers, providing
+# basic REST methods which handle session, cookie, and reconnects behind the
+# scenes.
+#
+# @example Basic usage
+#   require 'cvprac'
+#   cvp = CvpClient.new
+#   cvp.connect(['cvp1', 'cvp2', 'cvp3'], 'cvpadmin', 'arista123')
+#   result = cvp.get('/user/getUsers.do',
+#                    data: {queryparam: nil,
+#                           startIndex: 0,
+#                           endIndex: 0})
+#   pp(result)
+#   {"total"=>1,
 #    "users"=>
 #     [{"userId"=>"cvpadmin",
 #       "firstName"=>nil,
-
-#       "email"=>"jere@arista.com",
+#       "email"=>"nobody@example.com",
 #       "lastAccessed"=>1483726955950,
 #       "userStatus"=>"Enabled",
 #       "currentStatus"=>"Online",
@@ -72,6 +69,10 @@ require 'syslog/logger'
 #       "password"=>nil,
 #       "id"=>28}],
 #    "roles"=>{"cvpadmin"=>["network-admin"]}}
+#
+#   cvp.post('/test/endpoint.do', body: '{"some":"data"}')
+#
+# @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 class CvpClient
   METHOD_LIST = {
     get: Net::HTTP::Get,
@@ -80,22 +81,46 @@ class CvpClient
     head: Net::HTTP::Head,
     delete: Net::HTTP::Delete
   }.freeze
+  private_constant :METHOD_LIST
 
   # Maximum number of times to retry a get or post to the same
   # CVP node.
   NUM_RETRY_REQUESTS = 3
 
+  # @!attribute [rw] agent
+  #   Agent is the first part of the complete User-Agent
+  #   @example User-Agent
+  #     "User-agent"=>"cvp_app (x86_64-darwin14) cvprac-rb/0.1.0"
+  #   @return [String] Application name included in HTTP User-Agent passed to
+  #     CloudVision. (Default: $PROGRAM_NAME) The full User-Agent string
+  #     includes the application name, system-OS, and cvprac version
+  #     information.
+  # @!attribute [rw] connect_timeout
+  #   @return [Fixnum] Max number of seconds before failing an HTTP connect
+  # @!attribute [rw] headers
+  #   @return [Hash] HTTP request headers
+  # @!attribute [rw] port
+  #   @return [Fixnum] TCP port used for connections
+  # @!attribute [rw] protocol
+  #   @return [String] 'http' or 'https'
+  # @!attribute [rw] ssl_verify_mode
+  #   OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER
+  #   @see http://ruby-doc.org/stdlib-2.0.0/libdoc/openssl/rdoc/OpenSSL.html#module-OpenSSL-label-Peer+Verification
   attr_accessor :agent, :connect_timeout, :headers,
-                :port, :protocol
+                :port, :protocol, :ssl_verify_mode
 
+  # @!attribute [r] cookies
+  #   @return [HTTP::CookieJar] HTTP cookies sent with each authenticated request
+  # @!attribute [r] headers
+  #   @return [Hash] HTTP headers sent with each request
+  # @!attribute [r] nodes
+  #   @return [Array<String>] List of configured CloudVision nodes
   attr_reader :cookies, :headers, :nodes
-
-  attr_accessor :ssl_verify_mode
 
   # Initialize a new CvpClient object
   #
-  # @param syslog [Bool] log to syslog (Default: false)
-  # @param filename [String] Filename to write logs or :STDOUT
+  # @param syslog [Bool] log to syslog
+  # @param filename [String] log to filename or 'STDOUT'
   def initialize(_logger = 'cvprac', syslog = false, filename = nil)
     @agent = File.basename($PROGRAM_NAME)
     @agent_full = "#{@agent} (#{RUBY_PLATFORM}) "\
@@ -131,10 +156,15 @@ class CvpClient
 
   # Log message to all configured loggers
   #
-  # @param severity [Logger] Severity to log to:
+  # @overload log(severity: Logger::INFO, msg: nil)
+  #   @param severity [Logger] Severity to log to:
   #                          DEBUG < INFO < WARN < ERROR < FATAL
-  # @param msg [String] Message to log
-  # @param &block [block] Messages can be passed as a block to delay evaluation
+  #   @param msg [String] Message to log
+  #
+  # @overload log(severity: Logger::INFO)
+  #   @param severity [Logger] Severity to log to:
+  #                            DEBUG < INFO < WARN < ERROR < FATAL
+  #   @yield [msg] Messages can be passed as a block to delay evaluation
   def log(severity = Logger::INFO, msg = nil)
     msg = yield if block_given?
     @logstdout.add(severity, msg) if defined? @logstdout
@@ -142,18 +172,41 @@ class CvpClient
     @syslog.add(severity, msg) if defined? @syslog
   end
 
+  # rubocop:disable Metrics/PerceivedComplexity
+
   # Connect to one or more CVP nodes.
   #
   # @param nodes [Array] Hostnames or IPs of the CVP node or nodes
   # @param username [String] CVP username
   # @param password [String] CVP password
-  # @param connect_timeout [Int] Seconds to wait before failing a connect
-  # @param protocol [String] 'http' or 'https' to use when connecting to the CVP
-  # @param port [Int] TCP port to which we should connect is not standard
-  # http/https port.
-  # rubocop:disable Metrics/PerceivedComplexity
-  def connect(nodes, username, password, connect_timeout = 10,
-              protocol = 'http', port = nil)
+  #
+  # @param opts [Hash] Optional arguments
+  # @option opts [Fixnum] :connect_timeout (10) Seconds to wait before failing
+  #   a connect. Default: 10
+  # @option opts [String] :protocol ('https') 'http' or 'https' to use when
+  #   connecting to the CVP. Default: https
+  # @option opts [Fixnum] :port (nil) TCP port to which we should connect is
+  #   not standard http/https port.
+  # @option opts [Bool] :verify_ssl (false) Verify CVP SSL certificate?
+  #   Requires that a valid (non-self-signed) certificate be installed on the CloudVision node(s).
+  def connect(nodes, username, password, **opts)
+    #def connect(nodes, username, password,
+    #            opts = {connect_timeout: 10,
+    #                    protocol: 'https',
+    #                    port: nil,
+    #                    verify_ssl: false})
+    #connect_timeout = opts.key?(:connect_timeout) ? opts[:connect_timeout] : 10
+    #protocol = opts.key?(:protocol) ? opts[:protocol] : 'https'
+    #port = opts.key?(:port) ? opts[:port] : nil
+    #verify_ssl = opts.key?(:verify_ssl) ? opts[:verify_ssl] : false
+    opts = {connect_timeout: 10,
+            protocol: 'https',
+            port: nil,
+            verify_ssl: false}.merge(opts)
+    connect_timeout = opts[:connect_timeout]
+    protocol = opts[:protocol]
+    port = opts[:port]
+
     @nodes = Array(nodes) # Ensure nodes is always an array
     @node_index = 0
     @node_count = nodes.length
@@ -184,45 +237,63 @@ class CvpClient
     end
     @port = port
 
+    @ssl_verify_mode = if opts[:verify_ssl]
+                         OpenSSL::SSL::VERIFY_PEER
+                       else
+                         OpenSSL::SSL::VERIFY_NONE
+                       end
+
     create_session(nil)
     raise CvpLoginError, @error_msg unless @session
   end
   # rubocop:enable Metrics/PerceivedComplexity
 
+  # @!group REST methods
+
   # Send an HTTP GET request with session data and return the response.
   #
   # @param endpoint [String] URL endpoint starting after `https://host:port/web`
-  # @param :data [Hash] query parameters
+  #
+  # @param [Hash] opts Optional parameters
+  # @option opts [Hash] :data (nil) query parameters
+  #
   # @return [JSON] parsed response body
-  def get(endpoint, **args)
-    data = args.key?(:data) ? args[:data] : nil
+  def get(endpoint, **opts)
+    data = opts.key?(:data) ? opts[:data] : nil
     make_request(:get, endpoint, data: data)
   end
 
   # Send an HTTP POST request with session data and return the response.
   #
   # @param endpoint [String] URL endpoint starting after `https://host:port/web`
-  # @param :body [JSON] JSON body to post
-  # @param :data [Hash] query parameters
+  #
+  # @param [Hash] opts Optional parameters
+  # @option opts [JSON] :body (nil) JSON body to post
+  # @option opts [Hash] :data (nil) query parameters
   # @return [Net::HTTP Response]
-  def post(endpoint, **args)
-    data = args.key?(:data) ? args[:data] : nil
-    body = args.key?(:body) ? args[:body] : nil
+  def post(endpoint, **opts)
+    data = opts.key?(:data) ? opts[:data] : nil
+    body = opts.key?(:body) ? opts[:body] : nil
     make_request(:post, endpoint, data: data, body: body)
   end
+
+  # @!endgroup REST methods
 
   private
 
   # Send an HTTP request with session data and return the response.
   #
   # @param method [Symbol] Reuqest method: :get, :post, :head, etc.
-  # @param url [String] Full URL to the endpoint
-  # @param :body [JSON] JSON body to post
-  # @param :data [Hash] query parameters
-  # @param :timeout [Int] Seconds to timeout request. Default: 30
+  # @param endpoint [String] URI path to the endpoint after /web/
+  #
+  # @param opts [Hash] Optional arguments
+  # @option opts [JSON] :body JSON body to post
+  # @option opts [Hash] :data query parameters
+  # @option opts [Fixnum] :timeout (30) Seconds to timeout request.
+  #
   # @return [JSON] parsed response body
   # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
-  def make_request(method, endpoint, **args)
+  def make_request(method, endpoint, **opts)
     log(Logger::DEBUG) do
       "entering make_request #{method} "\
                          "endpoint: #{endpoint}"
@@ -230,17 +301,14 @@ class CvpClient
     raise 'No valid session to a CVP node. Use #connect()' unless @session
     url = @url_prefix + endpoint
 
-    data = args.key?(:data) ? args[:data] : nil
-    body = args.key?(:body) ? args[:body] : nil
-    timeout = args.key?(:timeout) ? args[:timeout] : 30
+    opts = {data: nil, body: nil, timeout: 30}.merge(opts)
 
     uri = URI(url)
-    uri.query = URI.encode_www_form(data) if data
+    uri.query = URI.encode_www_form(opts[:data]) if opts[:data]
     http = Net::HTTP.new(uri.host, uri.port)
-    http.read_timeout = timeout
+    http.read_timeout = opts[:timeout]
     if @protocol == 'https'
       http.use_ssl = true
-      # TODO: Parameterize and doc this!!!
       http.verify_mode = @ssl_verify_mode
     end
 
@@ -262,7 +330,7 @@ class CvpClient
       begin
         log(Logger::DEBUG) { 'make_request: ' + uri.request_uri }
         request = METHOD_LIST[method].new(uri.request_uri, @headers)
-        request.body = body if body
+        request.body = opts[:body] if opts[:body]
         response = http.request(request)
       rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError,
              Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError,
@@ -350,6 +418,12 @@ class CvpClient
     error
   end
 
+  # Check the response from Net::HTTP
+  #   If the response is not good data, generate a useful log message, then
+  #   raise an appropriate exception.
+  #
+  # @param response [Net::HTTP response object]
+  # @param prefix [String] Optional text to prepend to error messages
   # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
   def good_response?(response, prefix = '')
     log(Logger::DEBUG) { "response_code: #{response.code}" }
