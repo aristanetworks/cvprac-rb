@@ -14,11 +14,10 @@ node('puppet') {
 
             checkout scm
             sh """
-                #/usr/local/rvm/bin/rvm get stable --auto-dotfiles
-                #source ~/.rvm/scripts/rvm
-                source /usr/local/rvm/scripts/rvm
+                #!/bin/bash -l
+                [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
                 /usr/local/rvm/bin/rvm list
-                /usr/local/rvm/bin/rvm use 2.3.3
+                rvm use 2.3.3@cvprac-rb --create
                 gem install bundler --no-ri --no-rdoc
                 which ruby
                 ruby --version
@@ -30,7 +29,10 @@ node('puppet') {
 
             try {
                 sh """
-                    bundle exec rake rubocop
+                    #!/bin/bash -l
+                    source /usr/local/rvm/scripts/rvm
+                    rvm use 2.3.3@cvprac-rb
+                    bundle exec rake rubocop || true
                 """
             }
             catch (Exception err) {
@@ -42,10 +44,13 @@ node('puppet') {
         stage ('RSpec Unittests') {
 
             sh """
-                bundle exec rake cI_spec
+                #!/bin/bash -l
+                source /usr/local/rvm/scripts/rvm
+                rvm use 2.3.3@cvprac-rb
+                bundle exec rake ci_spec || true
             """
 
-            step([$class: 'JUnitResultArchiver', testResults: 'result.xml'])
+            step([$class: 'JUnitResultArchiver', testResults: 'results/*.xml'])
 
         }
 
@@ -53,7 +58,10 @@ node('puppet') {
 
             // wrap([$class: 'AnsiColorSimpleBuildWrapper', colorMapName: "xterm"]) {
                 sh """
-                    bundle exec rake yard
+                    #!/bin/bash -l
+                    source /usr/local/rvm/scripts/rvm
+                    rvm use 2.3.3@cvprac-rb
+                    bundle exec rake yard || true
                 """
             // }
         }
