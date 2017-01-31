@@ -79,14 +79,18 @@ class CvpApi
 
   # @!group Configlet Method Summary
 
-  # Get configlet definition by configlet name
+  # Add configlet
   #
   # @param [String] name The name of the desired configlet
+  # @param [Hash] config The configlet definition
   #
-  # @return [Hash] configlet definition
-  def get_configlet_by_name(name)
-    log(Logger::DEBUG) { "get_configlet_by_name: #{name}" }
-    @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
+  # @return [String] The key for the new configlet
+  def add_configlet(name, config)
+    log(Logger::DEBUG) { "add_configlet: #{name} Config: #{config.inspect}" }
+    @clnt.post('/configlet/addConfiglet.do',
+               data: { name: name, config: config })
+    data = @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
+    data[:key]
   end
 
   # Get configlet definition by configlet name
