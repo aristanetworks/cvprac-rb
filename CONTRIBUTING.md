@@ -4,7 +4,7 @@ Please ensure all pull requests include appropriate Yard docstrings and Rspec
 tests.
 
 After checking out the repo, run `bin/setup` to install
-dependencies. Then, run `rake checks` to run the tests. You can
+dependencies. Then, run `bundle exec rake checks` to run the tests. You can
 also run `bin/console` for an interactive prompt that will allow
 you to experiment.
 
@@ -28,4 +28,9 @@ This will create a git tag, push git commits and tags and push the .gem file to
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/arista-aristanetworks/cvprac-rb This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on
+[GitHub](https://github.com/arista-aristanetworks/cvprac-rb).
+
+This project is intended to be a safe, welcoming space for collaboration, and
+contributors are expected to adhere to the [Contributor
+Covenant](http://contributor-covenant.org) code of conduct.
