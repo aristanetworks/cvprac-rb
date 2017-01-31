@@ -51,8 +51,9 @@ require 'pp'
 class CvpApi
   # Initialize a new CvpClient object
   #
-  # @param syslog [Bool] log to syslog
-  # @param filename [String] log to filename or 'STDOUT'
+  # @param [CvpClient] clnt CvpClient object
+  # @param opts [Hash] optional parameters
+  # @option opts [Fixnum] :request_timeout (30) Max seconds for a request
   def initialize(clnt, **opts)
     opts = { request_timeout: 30 }.merge(opts)
     @clnt = clnt
@@ -65,7 +66,7 @@ class CvpApi
   end
 
   # rubocop:disable Style/AccessorMethodName
-  # @!group Info methods
+  # @!group Info Method Summary
 
   # Get CVP version information
   #
@@ -76,7 +77,7 @@ class CvpApi
     #                 timeout: @request_timeout)
   end
 
-  # @!group Configlet methods
+  # @!group Configlet Method Summary
 
   # Get configlet definition by configlet name
   #
@@ -88,7 +89,17 @@ class CvpApi
     @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
   end
 
-  # @!group Task methods
+  # Get configlet definition by configlet name
+  #
+  # @param [String] name The name of the desired configlet
+  #
+  # @return [Hash] configlet definition
+  def get_configlet_by_name(name)
+    log(Logger::DEBUG) { "get_configlet_by_name: #{name}" }
+    @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
+  end
+
+  # @!group Task Method Summary
 
   # Add note to CVP task by taskID
   #
