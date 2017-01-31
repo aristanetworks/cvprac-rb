@@ -93,6 +93,24 @@ class CvpApi
     data[:key]
   end
 
+  # Update configlet
+  #
+  # @param [String] name The name of the desired configlet
+  # @param [String] key The configlet key
+  # @param [Hash] config The configlet definition
+  #
+  # @return [String] The key for the new configlet
+  def update_configlet(name, key, config)
+    log(Logger::DEBUG) do
+      "update_configlet: #{name} Key: #{key} Config: #{config.inspect}"
+    end
+    @clnt.post('/configlet/updateConfiglet.do',
+               data: { name: name, config: config })
+    data = @clnt.get('/configlet/updateConfiglet.do',
+                     data: { config: config, key: key, name: name })
+    data[:key]
+  end
+
   # Delete configlet
   #
   # @param [String] name The name of the desired configlet
