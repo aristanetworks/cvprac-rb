@@ -49,23 +49,68 @@ require 'pp'
 #
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 class CvpApi
-    # Initialize a new CvpClient object
+  # Initialize a new CvpClient object
   #
   # @param syslog [Bool] log to syslog
   # @param filename [String] log to filename or 'STDOUT'
   def initialize(clnt, **opts)
-      opts = { request_timeout: 30 }.merge(opts)
-      @clnt = clnt
-      @log = clnt.log
-      @request_timeout = opts[:request_timeout]
+    opts = { request_timeout: 30 }.merge(opts)
+    @clnt = clnt
+    @request_timeout = opts[:request_timeout]
   end
+
+  # @see #CvpClient.log
+  def log(severity = Logger::INFO, msg = nil)
+    @clnt.log(severity, msg)
+  end
+
+  # rubocop:disable Style/AccessorMethodName
+  # @!group Info methods
 
   # Get CVP version information
   #
   # @return [Hash] CVP Version data. Ex: {"version"=>"2016.1.1"}
-  def get_cvp_info()
-    return @clnt.get('/cvpInfo/getCvpInfo.do')
-    #return @clnt.get('/cvpInfo/getCvpInfo.do',
+  def get_cvp_info
+    @clnt.get('/cvpInfo/getCvpInfo.do')
+    # return @clnt.get('/cvpInfo/getCvpInfo.do',
     #                 timeout: @request_timeout)
+  end
+
+  # @!group Configlet methods
+
+  # Get configlet definition by configlet name
+  #
+  # @param [String] name The name of the desired configlet
+  #
+  # @return [Hash] configlet definition
+  def get_configlet_by_name(name)
+    log(Logger::DEBUG) { "get_configlet_by_name: #{name}" }
+    @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
+  end
+
+  # @!group Task methods
+
+  # Add note to CVP task by taskID
+  #
+  # @param [String] task_id The id of the task to execute
+  # @param [String] note Content of the note
+  #
+  # @return [Hash] request body
+  def add_note_to_task(task_id, note)
+    log(Logger::DEBUG) do
+      "add_note_to_task: task_id: #{task_id}, note: [#{note}]"
+    end
+    @clnt.post('/task/addNoteToTask.do',
+               data: { workOrderId: task_id, note: note })
+  end
+
+  # Execute CVP task by taskID
+  #
+  # @param [String] task_id The id of the task to execute
+  #
+  # @return [Hash] request body
+  def execute_task(task_id)
+    log(Logger::DEBUG) { "execute_task: task_id: #{task_id}" }
+    @clnt.post('/task/executeTask.do', data: { data: [task_id] })
   end
 end
