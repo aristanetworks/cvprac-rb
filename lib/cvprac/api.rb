@@ -93,6 +93,18 @@ class CvpApi
     data[:key]
   end
 
+  # Delete configlet
+  #
+  # @param [String] name The name of the desired configlet
+  # @param [String] key The configlet key
+  #
+  # @return [String] The request result
+  def delete_configlet(name, key)
+    log(Logger::DEBUG) { "delete_configlet: #{name} Key: #{key}" }
+    @clnt.post('/configlet/deleteConfiglet.do',
+               data: { name: name, key: key })
+  end
+
   # Get configlet definition by configlet name
   #
   # @param [String] name The name of the desired configlet
