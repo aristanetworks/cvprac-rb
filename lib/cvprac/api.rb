@@ -42,27 +42,10 @@ require 'pp'
 #   require 'cvprac'
 #   cvp = CvpClient.new
 #   cvp.connect(['cvp1', 'cvp2', 'cvp3'], 'cvpadmin', 'arista123')
-#   result = cvp.get('/user/getUsers.do',
-#                    data: {queryparam: nil,
-#                           startIndex: 0,
-#                           endIndex: 0})
-#   pp(result)
-#   {"total"=>1,
-#    "users"=>
-#     [{"userId"=>"cvpadmin",
-#       "firstName"=>nil,
-#       "email"=>"nobody@example.com",
-#       "lastAccessed"=>1483726955950,
-#       "userStatus"=>"Enabled",
-#       "currentStatus"=>"Online",
-#       "contactNumber"=>nil,
-#       "factoryId"=>1,
-#       "lastName"=>nil,
-#       "password"=>nil,
-#       "id"=>28}],
-#    "roles"=>{"cvpadmin"=>["network-admin"]}}
-#
-#   cvp.post('/test/endpoint.do', body: '{"some":"data"}')
+#   api = CvpApi.new(cvp)
+#   result = api.get_cvp_info
+#   print result
+#   {"version"=>"2016.1.1"}
 #
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 class CvpApi
