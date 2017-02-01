@@ -62,6 +62,7 @@ class CvpApi
 
   # @see #CvpClient.log
   def log(severity = Logger::INFO, msg = nil)
+    msg = yield if block_given?
     @clnt.log(severity, msg)
   end
 
@@ -82,15 +83,22 @@ class CvpApi
   # Add configlet
   #
   # @param [String] name The name of the desired configlet
-  # @param [Hash] config The configlet definition
+  # @param [String] config Multiline string of EOS configuration
   #
-  # @return [String] The key for the new configlet
+  # @return [String, nil] The key for the new configlet. nil on failure
+  #
+  # @raises CvpApiError on failure.  Common: errorCode: 132518: Data already
+  #   exists in Database.
   def add_configlet(name, config)
     log(Logger::DEBUG) { "add_configlet: #{name} Config: #{config.inspect}" }
-    @clnt.post('/configlet/addConfiglet.do',
-               data: { name: name, config: config })
-    data = @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
-    data[:key]
+    resp = @clnt.post('/configlet/addConfiglet.do',
+                      body: { name: name, config: config.to_s }.to_json)
+    # data = @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
+    # print "Result: #{data.inspect}"
+    # data['data']
+    # print "Result: #{resp.inspect}"
+    log(Logger::DEBUG) { "add_configlet: #{name} Response: #{resp.inspect}" }
+    resp['data']
   end
 
   # Update configlet
@@ -104,11 +112,9 @@ class CvpApi
     log(Logger::DEBUG) do
       "update_configlet: #{name} Key: #{key} Config: #{config.inspect}"
     end
-    @clnt.post('/configlet/updateConfiglet.do',
-               data: { name: name, config: config })
-    data = @clnt.get('/configlet/updateConfiglet.do',
-                     data: { config: config, key: key, name: name })
-    data[:key]
+    data = @clnt.post('/configlet/updateConfiglet.do',
+                      body: { name: name, key: key, config: config }.to_json)
+    data['data']
   end
 
   # Delete configlet
@@ -117,10 +123,14 @@ class CvpApi
   # @param [String] key The configlet key
   #
   # @return [String] The request result
+  #
+  # @raises CvpApiError on failure.  Common when name or key is invalid:
+  #   errorCode: 132718: Invalid input parameters.
   def delete_configlet(name, key)
     log(Logger::DEBUG) { "delete_configlet: #{name} Key: #{key}" }
-    @clnt.post('/configlet/deleteConfiglet.do',
-               data: { name: name, key: key })
+    resp = @clnt.post('/configlet/deleteConfiglet.do',
+                      body: [{ name: name, key: key }].to_json)
+    resp['data']
   end
 
   # Get configlet definition by configlet name
