@@ -89,6 +89,10 @@ class CvpApi
   #
   # @raises CvpApiError on failure.  Common: errorCode: 132518: Data already
   #   exists in Database.
+  #
+  # @example
+  #    result = api.add_configlet('api_test_3',
+  #                               "interface Ethernet1\n   shutdown")
   def add_configlet(name, config)
     log(Logger::DEBUG) { "add_configlet: #{name} Config: #{config.inspect}" }
     resp = @clnt.post('/configlet/addConfiglet.do',
@@ -108,6 +112,10 @@ class CvpApi
   # @param [Hash] config The configlet definition
   #
   # @return [String] The key for the new configlet
+  #
+  # @example
+  #    result = api.update_configlet('api_test_3', configlet_new['key'],
+  #                                  "interface Ethernet1\n   shutdown")
   def update_configlet(name, key, config)
     log(Logger::DEBUG) do
       "update_configlet: #{name} Key: #{key} Config: #{config.inspect}"
@@ -138,6 +146,9 @@ class CvpApi
   # @param [String] name The name of the desired configlet
   #
   # @return [Hash] configlet definition
+  #
+  # @example
+  #    configlet = api.get_configlet_by_name('api_test_3')
   def get_configlet_by_name(name)
     log(Logger::DEBUG) { "get_configlet_by_name: #{name}" }
     @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
