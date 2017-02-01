@@ -470,8 +470,8 @@ class CvpClient
     log(Logger::DEBUG) { 'Body has an errorCode' }
     body = JSON.parse(response.body)
     if body.key?('errorMessage')
-      msg = "errorCode: #{body['errorCode']}: #{body['errorMessage']}"
-      log(Logger::ERROR) { msg }
+      err_msg = "errorCode: #{body['errorCode']}: #{body['errorMessage']}"
+      log(Logger::ERROR) { err_msg }
     else
       error_list = if body.key?('errors')
                      body['errors']
