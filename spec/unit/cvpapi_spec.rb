@@ -83,8 +83,7 @@ RSpec.describe CvpApi do
   before(:each) do
     stub_request(:post, 'https://cvp1.example.com/web/login/authenticate.do')
       .with(headers: dflt_headers)
-      .to_return(status: 200,
-                 body: login_body,
+      .to_return(body: login_body,
                  headers: { 'set-cookie' => set_cookie })
     cvp.connect(['cvp1.example.com'], 'cvpadmin', 'arista123')
   end
@@ -92,24 +91,144 @@ RSpec.describe CvpApi do
   let(:api) { CvpApi.new(cvp) }
 
   describe '#get_cvp_info' do
-    let(:body) { %({ "version": "2016.1.1" }) }
+    let(:verb) { :get }
+    let(:url) { 'https://cvp1.example.com/web/cvpInfo/getCvpInfo.do' }
+    let(:resp_body) { %({ "version": "2016.1.1" }) }
+
     before do
-      stub_request(:get, 'https://cvp1.example.com/web/cvpInfo/getCvpInfo.do')
+      stub_request(verb, url)
         .with(headers: good_headers)
-        .to_return(status: 200,
-                   body: body,
-                   headers: { 'date' => 'Mon, 09 Jan 2017 14:32:30 GMT',
-                              'server' => 'nginx/1.8.1',
-                              'connection' => 'keep-alive',
-                              'content-length' => '22',
-                              'content-type' => content_type })
+        .to_return(body: resp_body)
     end
     let(:response) { api.get_cvp_info }
     it 'returns a hash' do
       expect(response).to be_kind_of(Hash)
     end
     it 'returns the CVP version' do
-      expect(response).to eq(JSON.parse(body))
+      expect(response).to eq(JSON.parse(resp_body))
+    end
+  end
+
+  describe '#delete_configlet' do
+    let(:verb) { :post }
+    let(:url) { 'https://cvp1.example.com/web/configlet/deleteConfiglet.do' }
+    let(:resp_body) { %({"data":"success"}) }
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.delete_configlet('api_test_3',
+                           'configlet_1864955_16870562419823164')
+    end
+    it 'returns a string' do
+      expect(response).to be_kind_of(String)
+    end
+    it 'returns success' do
+      expect(response).to eq(JSON.parse(resp_body)['data'])
+    end
+    context 'with an invalid key' do
+      let(:resp_body) do
+        %({"errorCode":"132718","errorMessage":"Invalid input parameters."})
+      end
+
+      before do
+        stub_request(verb, url)
+          .with(headers: good_headers)
+          .to_return(body: resp_body)
+      end
+      it 'raises CvpApiError' do
+        expect do
+          api.delete_configlet('api_test_3',
+                               'configlet_1864975_16872535216220299')
+        end.to raise_error(CvpApiError,
+                           /errorCode: 132718: Invalid input parameters/)
+      end
+    end
+  end
+
+  describe '#update_configlet' do
+    let(:verb) { :post }
+    let(:url) { 'https://cvp1.example.com/web/configlet/updateConfiglet.do' }
+    let(:resp_body) { %({ "data": "Configlet is successfully updated" }) }
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.update_configlet('api_test_3', 'configlet_1864975_16872535216220299',
+                           "interface Ethernet1\n   no shutdown")
+    end
+    it 'returns a string' do
+      expect(response).to be_kind_of(String)
+    end
+    it 'returns the CVP version' do
+      expect(response).to eq(JSON.parse(resp_body)['data'])
+    end
+
+    # NOTE: With an invalid name, the update succeeds in 2016.1.1
+    context 'with an invalid key' do
+      let(:resp_body) do
+        %({"errorCode":"132532", "errorMessage":"Failure -  No data found."})
+      end
+
+      before do
+        stub_request(verb, url)
+          .with(headers: good_headers)
+          .to_return(body: resp_body)
+      end
+      it 'raises CvpApiError' do
+        expect do
+          api.update_configlet('api_test_3',
+                               'configlet_1864975_16872535216220299',
+                               "interface Ethernet1\n   no shutdown")
+        end.to raise_error(CvpApiError,
+                           /errorCode: 132532: Failure -  No data found./)
+      end
+    end
+  end
+
+  describe '#get_configlet_by_name' do
+    let(:verb) { :get }
+    let(:params) { '?name=api_test_3' }
+    let(:url) { 'https://cvp1.example.com/web/configlet/getConfigletByName.do' + params }
+    let(:resp_body) { '{"isDefault":"no","containerCount":0,"netElementCount":0,"isAutoBuilder":"false","reconciled":false,"dateTimeInLongFormat":1485917316929,"factoryId":1,"config":"!username admin privilege 15 role network-admin secret 0 admin\n!username cvpadmin privilege 15 role network-admin secret 0 arista123\nusername admin privilege 15 role network-admin secret 5 $1$7IJPvFto$.3IzcPDr5MJiBID8iCEFb1 \nusername cvpadmin privilege 15 role network-admin secret 5 $1$e8zc.bhO$G1YLdeQGXLBS1J8T.oeJT/ \n! \nmanagement api http-commands\nno shutdown\n","user":"cvpadmin","note":null,"name":"api_test_0","key":"configlet_1864975_16872535216220299","id":3,"type":"Static" }' }
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.get_configlet_by_name('api_test_3')
+    end
+    it 'returns a hash' do
+      expect(response).to be_kind_of(Hash)
+    end
+    it 'returns the configlet definition' do
+      expect(response).to eq(JSON.parse(resp_body))
+    end
+
+    context 'with a non-existent configlet name' do
+      let(:resp_body) do
+        %({"errorCode":"132801","errorMessage":"Entity does not exist"})
+      end
+
+      before do
+        stub_request(verb, url)
+          .with(headers: good_headers)
+          .to_return(body: resp_body)
+      end
+      it 'raises CvpApiError' do
+        expect do
+          api.get_configlet_by_name('api_test_3')
+        end.to raise_error(CvpApiError,
+                           /errorCode: 132801: Entity does not exist/)
+      end
     end
   end
 end
