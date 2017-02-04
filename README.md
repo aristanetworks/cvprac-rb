@@ -1,4 +1,4 @@
-# Cvprac - CloudVision REST API Client
+# Cvprac - CloudVision Portal REST API Client
 
 #### Table of Contents
 

@@ -40,11 +40,11 @@ require 'net/http'
 require 'pp'
 require 'syslog/logger'
 
-# Provide simplified REST methods to access Arista CloudVision
+# Provide simplified REST methods to access Arista CloudVision Portal
 #
-# Establish and maintain connections with Arista CloudVision servers, providing
-# basic REST methods which handle session, cookie, and reconnects behind the
-# scenes.
+# Establish and maintain connections with Arista CloudVision Portal servers,
+# providing basic REST methods which handle session, cookie, and reconnects
+# behind the scenes.
 #
 # @example Basic usage
 #   require 'cvprac'
@@ -92,7 +92,7 @@ class CvpClient
   #   @example User-Agent
   #     "User-agent"=>"cvp_app (x86_64-darwin14) cvprac-rb/0.1.0"
   #   @return [String] Application name included in HTTP User-Agent passed to
-  #     CloudVision. (Default: $PROGRAM_NAME) The full User-Agent string
+  #     CloudVision Portal. (Default: $PROGRAM_NAME) The full User-Agent string
   #     includes the application name, system-OS, and cvprac version
   #     information.
   # @!attribute [rw] connect_timeout
@@ -115,7 +115,7 @@ class CvpClient
   # @!attribute [r] headers
   #   @return [Hash] HTTP headers sent with each request
   # @!attribute [r] nodes
-  #   @return [Array<String>] List of configured CloudVision nodes
+  #   @return [Array<String>] List of configured CloudVision Portal nodes
   attr_reader :cookies, :headers, :nodes
 
   # Initialize a new CvpClient object
@@ -190,7 +190,7 @@ class CvpClient
   #   not standard http/https port.
   # @option opts [Bool] :verify_ssl (false) Verify CVP SSL certificate?
   #   Requires that a valid (non-self-signed) certificate be installed on the
-  #   CloudVision node(s).
+  #   CloudVision Portal node(s).
   def connect(nodes, username, password, **opts)
     opts = { connect_timeout: 10,
              protocol: 'https',
