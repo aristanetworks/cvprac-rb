@@ -40,10 +40,10 @@ require 'net/http'
 require 'pp'
 require 'syslog/logger'
 
-# Provide simplified REST methods to access Arista CloudVision Portal
+# Provide simplified RESTful methods to access Arista CloudVision Portal
 #
 # Establish and maintain connections with Arista CloudVision Portal servers,
-# providing basic REST methods which handle session, cookie, and reconnects
+# providing basic RESTful methods which handle session, cookie, and reconnects
 # behind the scenes.
 #
 # @example Basic usage
@@ -241,7 +241,7 @@ class CvpClient
   end
   # rubocop:enable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
-  # @!group REST methods
+  # @!group RESTful methods
 
   # Send an HTTP GET request with session data and return the response.
   #
@@ -270,7 +270,7 @@ class CvpClient
     make_request(:post, endpoint, data: data, body: body)
   end
 
-  # @!endgroup REST methods
+  # @!endgroup RESTful methods
 
   private
 

@@ -1,4 +1,4 @@
-# Cvprac - CloudVision Portal REST API Client
+# Cvprac - CloudVision Portal RESTful API Client
 
 #### Table of Contents
 
@@ -14,9 +14,9 @@
 
 ## Overview
 
-The cvprac rubygem is a Ruby REST API Client for Arista CloudVision&reg; Portal
-(CVP) which can be used for building applications that work with Arista CVP.
-If you are looking for a Python version, see [cvprac on
+The cvprac rubygem is a Ruby RESTful API Client for Arista CloudVision&reg;
+Portal (CVP) which can be used for building applications that work with Arista
+CVP. If you are looking for a Python version, see [cvprac on
 PyPI](https://pypi.python.org/pypi/cvprac) or
 [GitHub](https://pypi.python.org/pypi/cvprac).
 
