@@ -179,8 +179,7 @@ RSpec.describe CvpClient do
       end
       it 'raises error' do
         expect { cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow') }
-          .to raise_error(CvpApiError)
-        # .to raise_error(CvpLoginError)
+          .to raise_error(CvpLoginError)
       end
     end
 
