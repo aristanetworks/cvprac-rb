@@ -106,8 +106,13 @@ class CvpClient
   # @!attribute [rw] ssl_verify_mode
   #   OpenSSL::SSL::VERIFY_NONE or OpenSSL::SSL::VERIFY_PEER
   #   @see http://ruby-doc.org/stdlib-2.0.0/libdoc/openssl/rdoc/OpenSSL.html#module-OpenSSL-label-Peer+Verification
+  # @!attribute [rw] logger.level
+  #   logger severity level: Logger::DEBUG < Logger::INFO < Logger::WARN <
+  #   Logger::ERROR < Logger::FATAL.  This allows the user to increase or
+  #   decrease the logging level of the STDOUT log as needed throughout their
+  #   application.
   attr_accessor :agent, :connect_timeout, :headers,
-                :port, :protocol, :ssl_verify_mode
+                :port, :protocol, :ssl_verify_mode, :file_log_level
 
   # @!attribute [r] cookies
   #   @return [HTTP::CookieJar] HTTP cookies sent with each authenticated
@@ -118,11 +123,19 @@ class CvpClient
   #   @return [Array<String>] List of configured CloudVision Portal nodes
   attr_reader :cookies, :headers, :nodes
 
+  def file_log_level=(value)
+    @file_log_level = value
+    # Update existing handles if they exist
+    @logstdout.level = @file_log_level if @logstdout.level
+    @logfile.level = @file_log_level if @logfile.level
+  end
+
   # Initialize a new CvpClient object
   #
   # @param syslog [Bool] log to syslog
   # @param filename [String] log to filename or 'STDOUT'
-  def initialize(_logger = 'cvprac', syslog = false, filename = nil)
+  def initialize(_logger = 'cvprac', syslog = false, filename = nil,
+                 file_log_level = Logger::INFO)
     @agent = File.basename($PROGRAM_NAME)
     @agent_full = "#{@agent} (#{RUBY_PLATFORM}) "\
                   "cvprac-rb/#{Cvprac::VERSION}"
@@ -130,6 +143,7 @@ class CvpClient
     @connect_timeout = nil
     @cookies = HTTP::CookieJar.new
     @error_msg = nil
+    @file_log_level = file_log_level
     @headers = { 'Accept' => 'application/json',
                  'Content-Type' => 'application/json',
                  'User-agent' => @agent_full }
@@ -145,10 +159,12 @@ class CvpClient
 
     if filename == 'STDOUT'
       @logstdout = Logger.new(STDOUT)
-      # @logstdout.level = Logger::INFO
-      @logstdout.level = Logger::DEBUG
+      @logstdout.level = @file_log_level
     else
-      @logfile = Logger.new(filename) unless filename.nil?
+      unless filename.nil?
+        @logfile = Logger.new(filename)
+        @logfile.level = @file_log_level
+      end
     end
     @syslog = Syslog::Logger.new(filename) if syslog
 
