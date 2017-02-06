@@ -132,10 +132,18 @@ class CvpClient
 
   # Initialize a new CvpClient object
   #
-  # @param syslog [Bool] log to syslog
-  # @param filename [String] log to filename or 'STDOUT'
-  def initialize(_logger = 'cvprac', syslog = false, filename = nil,
-                 file_log_level = Logger::INFO)
+  # @param opts [Hash] Optional arguments
+  # @option opts [String] :logger ('cvprac') Logging name for this service
+  # @option opts [Bool] :syslog (false) Log to the syslog service?
+  # @option opts [String] :filename (nil) A local logfile to use, if provided
+  # @option opts [Logger::level] :file_log_level (Logger::INFO) The default
+  #   logging level which will be recorded in the logs.  See the Logging
+  #   rubygem for additional severity levels
+  def initialize(**opts)
+    opts = { logger: 'cvprac',
+             syslog: false,
+             filename: nil,
+             file_log_level: Logger::INFO }.merge(opts)
     @agent = File.basename($PROGRAM_NAME)
     @agent_full = "#{@agent} (#{RUBY_PLATFORM}) "\
                   "cvprac-rb/#{Cvprac::VERSION}"
@@ -143,7 +151,7 @@ class CvpClient
     @connect_timeout = nil
     @cookies = HTTP::CookieJar.new
     @error_msg = nil
-    @file_log_level = file_log_level
+    @file_log_level = opts[:file_log_level]
     @headers = { 'Accept' => 'application/json',
                  'Content-Type' => 'application/json',
                  'User-agent' => @agent_full }
@@ -157,16 +165,16 @@ class CvpClient
     @ssl_verify_mode = OpenSSL::SSL::VERIFY_NONE
     @url_prefix = nil
 
-    if filename == 'STDOUT'
+    if opts[:filename] == 'STDOUT'
       @logstdout = Logger.new(STDOUT)
       @logstdout.level = @file_log_level
     else
-      unless filename.nil?
-        @logfile = Logger.new(filename)
+      unless opts[:filename].nil?
+        @logfile = Logger.new(opts[:filename])
         @logfile.level = @file_log_level
       end
     end
-    @syslog = Syslog::Logger.new(filename) if syslog
+    @syslog = Syslog::Logger.new(opts[:filename]) if opts[:syslog]
 
     log(Logger::INFO, 'CvpClient initialized')
   end

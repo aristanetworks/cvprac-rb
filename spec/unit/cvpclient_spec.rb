@@ -31,7 +31,9 @@
 RSpec.describe CvpClient do
   let(:cvp) { CvpClient.new }
   # Use for debugging
-  # let(:cvp) { CvpClient.new('cvprac', true, 'STDOUT') }
+  # let(:cvp) do
+  #   CvpClient.new(filename: 'STDOUT', file_log_level: Logger::DEBUG) }
+  # end
 
   let(:accept_encoding) { 'gzip;q=1.0,deflate;q=0.6,identity;q=0.3' }
   let(:content_type) { 'application/json;charset=UTF-8' }
@@ -177,7 +179,8 @@ RSpec.describe CvpClient do
       end
       it 'raises error' do
         expect { cvp.connect(['cvp2.example.com'], 'cvpadmin', 'idontknow') }
-          .to raise_error(CvpLoginError)
+          .to raise_error(CvpApiError)
+        # .to raise_error(CvpLoginError)
       end
     end
 
@@ -311,7 +314,9 @@ RSpec.describe CvpClient do
 
     context 'timeout' do
       # Verbose debug settings
-      # let(:cvp2) { CvpClient.new('cvprac', true, 'STDOUT') }
+      # let(:cvp) do
+      #   CvpClient.new(filename: 'STDOUT', file_log_level: Logger::DEBUG) }
+      # end
       let(:cvp2) { CvpClient.new }
       before(:each) do
         cvp2.connect(['cvp1.example.com'], 'cvpadmin', 'idontknow')

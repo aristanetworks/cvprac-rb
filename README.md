@@ -93,6 +93,20 @@ result = cvp.get('/user/getUsers.do',
 
 cvp.post('/some/endpoint.do', body: '{"some":"data"}')
 ```
+
+Modifying logging settings:
+
+```
+require ‘cvprac’
+
+# Log to Syslog
+cvp = CvpClient.new(syslog: true)
+
+# Log to a file or ‘STDOUT’ and increase the logging level
+cvp = CvpClient.new(filename: 'STDOUT', file_log_level: Logger::DEBUG)
+
+```
+
 API Class example:
 
 Not Yet Implemented
