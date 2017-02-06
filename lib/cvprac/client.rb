@@ -401,7 +401,6 @@ class CvpClient
     @error_msg = '\n'
     (0...node_count).each do |id|
       host = @node_pool.next
-      #host = @nodes[id]
       @url_prefix = "#{@protocol}://#{host}:#{@port}/web"
       @http = Net::HTTP.new(host, @port)
       if @protocol == 'https'
