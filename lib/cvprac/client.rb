@@ -399,7 +399,7 @@ class CvpClient
     node_count -= 1 if all_nodes.nil? && node_count > 1
 
     @error_msg = '\n'
-    (0...node_count).each do |id|
+    (0...node_count).each do
       host = @node_pool.next
       @url_prefix = "#{@protocol}://#{host}:#{@port}/web"
       @http = Net::HTTP.new(host, @port)
