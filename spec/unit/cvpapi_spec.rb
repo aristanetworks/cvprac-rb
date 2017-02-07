@@ -195,8 +195,22 @@ RSpec.describe CvpApi do
   describe '#get_configlet_by_name' do
     let(:verb) { :get }
     let(:params) { '?name=api_test_3' }
-    let(:url) { 'https://cvp1.example.com/web/configlet/getConfigletByName.do' + params }
-    let(:resp_body) { '{"isDefault":"no","containerCount":0,"netElementCount":0,"isAutoBuilder":"false","reconciled":false,"dateTimeInLongFormat":1485917316929,"factoryId":1,"config":"!username admin privilege 15 role network-admin secret 0 admin\n!username cvpadmin privilege 15 role network-admin secret 0 arista123\nusername admin privilege 15 role network-admin secret 5 $1$7IJPvFto$.3IzcPDr5MJiBID8iCEFb1 \nusername cvpadmin privilege 15 role network-admin secret 5 $1$e8zc.bhO$G1YLdeQGXLBS1J8T.oeJT/ \n! \nmanagement api http-commands\nno shutdown\n","user":"cvpadmin","note":null,"name":"api_test_0","key":"configlet_1864975_16872535216220299","id":3,"type":"Static" }' }
+    let(:url) do
+      'https://cvp1.example.com/web/configlet/getConfigletByName.do' + params
+    end
+    let(:resp_body) do
+      '{"isDefault":"no","containerCount":0,"netElementCount":0,'\
+      '"isAutoBuilder":"false","reconciled":false,'\
+      '"dateTimeInLongFormat":1485917316929,"factoryId":1,"config":'\
+      '"!username admin privilege 15 role network-admin secret 0'\
+      ' admin\n!username cvpadmin privilege 15 role network-admin secret 0'\
+      ' arista123\nusername admin privilege 15 role network-admin secret 5 '\
+      '$1$7IJPvFto$.3IzcPDr5MJiBID8iCEFb1 \nusername cvpadmin privilege 15 '\
+      'role network-admin secret 5 $1$e8zc.bhO$G1YLdeQGXLBS1J8T.oeJT/ \n! \n'\
+      'management api http-commands\nno shutdown\n","user":"cvpadmin",'\
+      '"note":null,"name":"api_test_0",'\
+      '"key":"configlet_1864975_16872535216220299","id":3,"type":"Static" }'
+    end
 
     before do
       stub_request(verb, url)

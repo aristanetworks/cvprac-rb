@@ -145,9 +145,11 @@ class CvpApi
   #
   # @param [Fixnum] start_i (0) Start index of pagination
   # @param [Fixnum] end_i (0) End index for pagination. 0 will get all
-  # @param [String] type ('Configlet') Possible types are All, Configlet, Builder, Draft, Builderwithoutdraft, Generated, IgnoreDraft
+  # @param [String] type ('Configlet') Possible types are All, Configlet,
+  #   Builder, Draft, Builderwithoutdraft, Generated, IgnoreDraft
   #
-  # @return [Hash] configlet definitions with keys: total and data (a list of definitions)
+  # @return [Hash] configlet definitions with keys: total and data (a list of
+  #   definitions)
   #
   # @example
   #    configlet = api.get_configlets()
@@ -157,7 +159,7 @@ class CvpApi
     end
     @clnt.get('/configlet/getConfiglets.do', data: { startIndex: start_i,
                                                      endIndex: end_i,
-                                                     type: type})
+                                                     type: type })
   end
 
   # Get configlet definition by configlet name
