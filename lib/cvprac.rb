@@ -29,6 +29,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 require 'cvprac/version'
+require 'cvprac/client'
+require 'cvprac/client_errors'
 
 # Top level definition of Cvprac
 #
