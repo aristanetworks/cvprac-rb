@@ -10,7 +10,7 @@
 6. [Support](#support)
 
 [![Gem Version](https://badge.fury.io/rb/cvprac)](https://badge.fury.io/rb/cvprac)
-[![Unittest Status](https://revproxy.arista.com/eosplus/ci/buildStatus/icon?job=Pipeline_jerearista_test/cvprac-rb/initial-function&style=plastic)](https://revproxy.arista.com/eosplus/ci/job/Pipeline_jerearista_test/cvprac-rb/initial-function)
+[![Unittest Status](https://revproxy.arista.com/eosplus/ci/buildStatus/icon?job=Pipeline_jerearista_test/cvprac-rb/develop&style=plastic)](https://revproxy.arista.com/eosplus/ci/job/Pipeline_jerearista_test/cvprac-rb/develop)
 
 ## Overview
 
