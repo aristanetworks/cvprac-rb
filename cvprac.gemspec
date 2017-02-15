@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
 
   # spec.add_runtime_dependency 'inifile', '~> 0'
   spec.add_runtime_dependency 'http-cookie'
+  spec.add_runtime_dependency 'require_all'
 
   spec.add_development_dependency 'bump'
   spec.add_development_dependency 'bundler'

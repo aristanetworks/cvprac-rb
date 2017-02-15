@@ -30,41 +30,37 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-require 'json'
-require 'pp'
-require 'require_all'
-require_all 'lib/cvprac/api/*.rb'
-
-# Abstract methods for interacting with Arista CloudVision
-#
-# CvpApi provides high-level, convenience methods which utilize CvpClient for
-# handling communications with CVP.
-#
-# @example Basic usage
-#   require 'cvprac'
-#   cvp = CvpClient.new
-#   cvp.connect(['cvp1', 'cvp2', 'cvp3'], 'cvpadmin', 'arista123')
-#   api = CvpApi.new(cvp)
-#   result = api.get_cvp_info
-#   print result
-#   {"version"=>"2016.1.1"}
-#
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
-class CvpApi
-  # Initialize a new CvpClient object
-  #
-  # @param [CvpClient] clnt CvpClient object
-  # @param opts [Hash] optional parameters
-  # @option opts [Fixnum] :request_timeout (30) Max seconds for a request
-  def initialize(clnt, **opts)
-    opts = { request_timeout: 30 }.merge(opts)
-    @clnt = clnt
-    @request_timeout = opts[:request_timeout]
-  end
+module Cvprac
+  # CVP Configlet api methods
+  module Api
+    # CVP Configlet api methods
+    module Task
+      # @!group Task Method Summary
 
-  # @see #CvpClient.log
-  def log(severity = Logger::INFO, msg = nil)
-    msg = yield if block_given?
-    @clnt.log(severity, msg)
+      # Add note to CVP task by taskID
+      #
+      # @param [String] task_id The id of the task to execute
+      # @param [String] note Content of the note
+      #
+      # @return [Hash] request body
+      def add_note_to_task(task_id, note)
+        log(Logger::DEBUG) do
+          "add_note_to_task: task_id: #{task_id}, note: [#{note}]"
+        end
+        @clnt.post('/task/addNoteToTask.do',
+                   data: { workOrderId: task_id, note: note })
+      end
+
+      # Execute CVP task by taskID
+      #
+      # @param [String] task_id The id of the task to execute
+      #
+      # @return [Hash] request body
+      def execute_task(task_id)
+        log(Logger::DEBUG) { "execute_task: task_id: #{task_id}" }
+        @clnt.post('/task/executeTask.do', data: { data: [task_id] })
+      end
+    end
   end
 end

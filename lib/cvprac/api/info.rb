@@ -30,41 +30,23 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-require 'json'
-require 'pp'
-require 'require_all'
-require_all 'lib/cvprac/api/*.rb'
-
-# Abstract methods for interacting with Arista CloudVision
-#
-# CvpApi provides high-level, convenience methods which utilize CvpClient for
-# handling communications with CVP.
-#
-# @example Basic usage
-#   require 'cvprac'
-#   cvp = CvpClient.new
-#   cvp.connect(['cvp1', 'cvp2', 'cvp3'], 'cvpadmin', 'arista123')
-#   api = CvpApi.new(cvp)
-#   result = api.get_cvp_info
-#   print result
-#   {"version"=>"2016.1.1"}
-#
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
-class CvpApi
-  # Initialize a new CvpClient object
-  #
-  # @param [CvpClient] clnt CvpClient object
-  # @param opts [Hash] optional parameters
-  # @option opts [Fixnum] :request_timeout (30) Max seconds for a request
-  def initialize(clnt, **opts)
-    opts = { request_timeout: 30 }.merge(opts)
-    @clnt = clnt
-    @request_timeout = opts[:request_timeout]
-  end
+module Cvprac
+  # Cvprac::Api namespace
+  module Api
+    # CVP Info api methods
+    module Info
+      # rubocop:disable Style/AccessorMethodName
+      # @!group Info Method Summary
 
-  # @see #CvpClient.log
-  def log(severity = Logger::INFO, msg = nil)
-    msg = yield if block_given?
-    @clnt.log(severity, msg)
+      # Get CVP version information
+      #
+      # @return [Hash] CVP Version data. Ex: {"version"=>"2016.1.1"}
+      def get_cvp_info
+        @clnt.get('/cvpInfo/getCvpInfo.do')
+        # return @clnt.get('/cvpInfo/getCvpInfo.do',
+        #                 timeout: @request_timeout)
+      end
+    end
   end
 end
