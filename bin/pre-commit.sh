@@ -65,7 +65,9 @@ let "err = $err + $?"
 bundle exec rake yard
 let "err = $err + $?"
 
+echo
+
 if [ ${err} != 0 ]; then
-    echo "\n\033[31mERROR: Some checks failed.  Commit halted.\033[0m"
+    echo "\033[31mERROR: Some checks failed.  Commit halted.\033[0m"
 fi
 exit ${err}
