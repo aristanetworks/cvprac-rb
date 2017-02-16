@@ -51,6 +51,10 @@ require_all 'lib/cvprac/api/*.rb'
 #
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 class CvpApi
+  include Cvprac::Api::Info
+  include Cvprac::Api::Configlet
+  include Cvprac::Api::Task
+
   # Initialize a new CvpClient object
   #
   # @param [CvpClient] clnt CvpClient object
