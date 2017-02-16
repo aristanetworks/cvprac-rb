@@ -45,7 +45,7 @@ module Cvprac
       #
       # @return [String, nil] The key for the new configlet. nil on failure
       #
-      # @raises CvpApiError on failure.  Common: errorCode: 132518: Data already
+      # @raise CvpApiError on failure.  Common: errorCode: 132518: Data already
       #   exists in Database.
       #
       # @example
@@ -96,7 +96,7 @@ module Cvprac
       #
       # @return [String] The request result
       #
-      # @raises CvpApiError on failure.  Common when name or key is invalid:
+      # @raise CvpApiError on failure.  Common when name or key is invalid:
       #   errorCode: 132718: Invalid input parameters.
       def delete_configlet(name, key)
         log(Logger::DEBUG) { "delete_configlet: #{name} Key: #{key}" }
