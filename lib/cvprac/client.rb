@@ -111,8 +111,10 @@ class CvpClient
   #   Logger::ERROR < Logger::FATAL.  This allows the user to increase or
   #   decrease the logging level of the STDOUT log as needed throughout their
   #   application.
+  # @!attribute [rw] api
+  #   An instance of CvpApi
   attr_accessor :agent, :connect_timeout, :headers,
-                :port, :protocol, :ssl_verify_mode, :file_log_level
+                :port, :protocol, :ssl_verify_mode, :file_log_level, :api
 
   # @!attribute [r] cookies
   #   @return [HTTP::CookieJar] HTTP cookies sent with each authenticated
@@ -175,6 +177,9 @@ class CvpClient
       end
     end
     @syslog = Syslog::Logger.new(opts[:filename]) if opts[:syslog]
+
+    # Instantiate the CvpApi class
+    @api = CvpApi.new(self)
 
     log(Logger::INFO, 'CvpClient initialized')
   end
