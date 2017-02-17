@@ -51,6 +51,8 @@ require_all 'lib/cvprac/api/*.rb'
 #
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 class CvpApi
+  # Methods are split into modules by subject.  Pull mothods back into the
+  #   main class here.  New modules in lib/cvprac/api/ must be added.
   include Cvprac::Api::Info
   include Cvprac::Api::Configlet
   include Cvprac::Api::Task
