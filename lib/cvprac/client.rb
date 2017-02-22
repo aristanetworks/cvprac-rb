@@ -316,15 +316,15 @@ class CvpClient
   # @return [JSON] parsed response body
   # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
   def make_request(method, endpoint, **opts)
+    opts = { data: nil, body: nil, timeout: 30 }.merge(opts)
     log(Logger::DEBUG) do
       "entering make_request #{method} "\
-                         "endpoint: #{endpoint}"
+      "endpoint: #{endpoint}"\
+      " with query: #{opts.inspect}"
     end
     raise 'No valid session to a CVP node. Use #connect()' unless @session
+
     url = @url_prefix + endpoint
-
-    opts = { data: nil, body: nil, timeout: 30 }.merge(opts)
-
     uri = URI(url)
     uri.query = URI.encode_www_form(opts[:data]) if opts[:data]
     http = Net::HTTP.new(uri.host, uri.port)
