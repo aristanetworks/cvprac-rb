@@ -138,6 +138,31 @@ module Cvprac
         log(Logger::DEBUG) { "get_configlet_by_name: #{name}" }
         @clnt.get('/configlet/getConfigletByName.do', data: { name: name })
       end
+
+      # Get devices associated with a configlet name
+      #
+      # @param [String] name The name of the desired configlet
+      # @param opts [Hash] Optional arguments
+      # @option opts [String] :queryparam Search string
+      # @option opts [Fixnum] :start_index (0) Start index for pagination
+      # @option opts [Fixnum] :end_index (0) End index for pagination
+      #
+      # @return [Hash] configlet definition
+      #
+      # @example
+      #    configlet = api.get_configlet_by_name('api_test_3')
+      #
+      def get_devices_by_configlet_name(name, **opts)
+        opts = { queryparams: nil,
+                 start_index: 0,
+                 end_index: 0 }.merge(opts)
+        log(Logger::DEBUG) { "get_configlet_by_name: #{name}" }
+        @clnt.get('/configlet/getAppliedDevices.do',
+                  data: { configletName: name,
+                          queryparam: opts['queryparam'],
+                          startIndex: opts['start_index'],
+                          endIndex: opts['end_index'] })
+      end
     end
   end
 end
