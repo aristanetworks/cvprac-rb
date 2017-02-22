@@ -159,9 +159,9 @@ module Cvprac
         log(Logger::DEBUG) { "get_configlet_by_name: #{name}" }
         @clnt.get('/configlet/getAppliedDevices.do',
                   data: { configletName: name,
-                          queryparam: opts['queryparam'],
-                          startIndex: opts['start_index'],
-                          endIndex: opts['end_index'] })
+                          queryparam: opts[:queryparam],
+                          startIndex: opts[:start_index],
+                          endIndex: opts[:end_index] })
       end
     end
   end
