@@ -55,6 +55,8 @@ class CvpApi
   #   main class here.  New modules in lib/cvprac/api/ must be added.
   include Cvprac::Api::Info
   include Cvprac::Api::Configlet
+  include Cvprac::Api::Provisioning
+  include Cvprac::Api::Inventory
   include Cvprac::Api::Task
 
   # Initialize a new CvpClient object
