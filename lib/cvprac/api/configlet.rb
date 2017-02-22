@@ -153,7 +153,7 @@ module Cvprac
       #    configlet = api.get_configlet_by_name('api_test_3')
       #
       def get_devices_by_configlet_name(name, **opts)
-        opts = { queryparams: nil,
+        opts = { queryparam: nil,
                  start_index: 0,
                  end_index: 0 }.merge(opts)
         log(Logger::DEBUG) { "get_configlet_by_name: #{name}" }
