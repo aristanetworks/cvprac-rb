@@ -47,18 +47,22 @@ module Cvprac
       # @option opts [Fixnum] :end_index (0) End index for pagination
       #
       # @return [Array] List of configlets applied to the device
+      # rubocop:disable Metrics/MethodLength
       def get_configlets_by_device_id(sys_mac, **opts)
         opts = { queryparam: nil,
                  start_index: 0,
                  end_index: 0 }.merge(opts)
-        log(Logger::DEBUG) { "get_configlets_by_device_id: #{sys_mac}" }
+        log(Logger::DEBUG) do
+          "get_configlets_by_device_id: #{sys_mac} with query: #{opts.inspect}"
+        end
         res = @clnt.get('/provisioning/getConfigletsByNetElementId.do',
                         data: { netElementId: sys_mac,
-                                queryParam: opts['queryparam'],
-                                startIndex: opts['start_index'],
-                                endIndex: opts['end_index'] })
+                                queryParam: opts[:queryparam],
+                                startIndex: opts[:start_index],
+                                endIndex: opts[:end_index] })
         res['configletList']
       end
+      # rubocop:enable Metrics/MethodLength
     end
   end
 end
