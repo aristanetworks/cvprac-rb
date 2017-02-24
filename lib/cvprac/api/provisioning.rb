@@ -63,6 +63,56 @@ module Cvprac
         res['configletList']
       end
       # rubocop:enable Metrics/MethodLength
+
+      private
+
+      # Add a temp action that requires a saveTopology call to take effect.
+      #
+      # @param [Hash] data the data object to process
+      #   Ex: data = {'data': [{specific key/value pairs}]}
+      #
+      # @return [Array] List of configlets applied to the device
+      # rubocop:disable Metrics/MethodLength
+      def add_temp_action(data)
+        log(Logger::DEBUG) do
+          "#{__method__}: #{data.inspect}"
+        end
+        resp = @clnt.post('/provisioning/addTempAction.do',
+                          data: { format: 'topology',
+                                  queryParam: nil,
+                                  nodeId: 'root' },
+                          body: data)
+        log(Logger::DEBUG) do
+          "#{__method__}: response #{resp.inspect}"
+        end
+        resp
+      end
+      # rubocop:enable Metrics/MethodLength
+
+      # Commits a temp action.  See #add_temp_action
+      #
+      # @param [Array] data a list that contains a dict with a specific
+      #   format for the desired action. Our primary use case is for
+      #   confirming existing temp actions so we most often send an
+      #   empty list to confirm an existing temp action.
+      #   Example:
+      #
+      # @return [Hash] Contains a status and a list of task ids created,
+      #   if any.
+      #
+      # @example
+      #    => {u'data': {u'status': u'success', u'taskIds': []}}
+      def save_topology_v2(data)
+        log(Logger::DEBUG) do
+          "#{__method__}: #{data.inspect}"
+        end
+        resp = @clnt.post('/provisioning/v2/saveTopology.do',
+                          body: data)
+        log(Logger::DEBUG) do
+          "#{__method__}: response #{resp.inspect}"
+        end
+        resp
+      end
     end
   end
 end
