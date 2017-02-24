@@ -38,6 +38,26 @@ module Cvprac
     module Task
       # @!group Task Method Summary
 
+      # Get task data by ID
+      #
+      # @param [String] task_id The id of the task to execute
+      #
+      # @return [Hash] request body
+      def get_task_by_id(task_id)
+        log(Logger::DEBUG) { "#{__method__}: task_id: #{task_id}" }
+        begin
+          task = @clnt.get('/task/getTaskById.do', data: { taskId: task_id })
+        rescue CvpApiError => e
+          # puts e.message
+          # puts e.backtrace.inspect
+          if e.to_s.include?('Invalid WorkOrderId') ||
+             e.to_s.include?('Entity does not exist')
+            return nil
+          end
+        end
+        task
+      end
+
       # Add note to CVP task by taskID
       #
       # @param [String] task_id The id of the task to execute
@@ -59,7 +79,7 @@ module Cvprac
       # @return [Hash] request body
       def execute_task(task_id)
         log(Logger::DEBUG) { "execute_task: task_id: #{task_id}" }
-        @clnt.post('/task/executeTask.do', data: { data: [task_id] })
+        @clnt.post('/task/executeTask.do', body: { data: [task_id] })
       end
     end
   end
