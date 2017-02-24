@@ -163,6 +163,77 @@ module Cvprac
                           startIndex: opts[:start_index],
                           endIndex: opts[:end_index] })
       end
+
+      # Apply configlets to a device
+      #
+      # @param [String] app_name The name to use in the info field
+      # @param [Hash] device Device definition from #get_device_by_id()
+      # @param [Hash] new_configlets List of configlet name & key pairs
+      #
+      # @return [Hash] Hash including status and a list of task IDs created,
+      #   if any
+      #
+      # @example
+      #    result = api.apply_configlets_to_device('test',
+      #                                            {...},
+      #                                            [{'name' => 'new_configlet',
+      #                                              'key' => '...'}])
+      #    => {"data"=>{"taskIds"=>["8"], "status"=>"success"}}
+      #
+      # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+      def apply_configlets_to_device(app_name, device, new_configlets)
+        log(Logger::DEBUG) { "apply_configlets_to_device: #{app_name}" }
+
+        # get the list of existing configlets
+        configlets = get_configlets_by_device_id(device['systemMacAddress'])
+
+        # Get a list of the configlet names and keys
+        cnames = []
+        ckeys = []
+        configlets.each do |configlet|
+          cnames << configlet['name']
+          ckeys << configlet['key']
+        end
+
+        new_configlets.each do |configlet|
+          cnames << configlet['name']
+          ckeys << configlet['key']
+        end
+
+        info = "#{app_name}: Configlet Assign: to Device #{device['fqdn']}"
+        info_preview = "<b>Configlet Assign:</b> to Device #{device['fqdn']}"
+        data = { data: [{ id: 1,
+                          info: info,
+                          infoPreview: info_preview,
+                          note: '',
+                          action: 'associate',
+                          nodeType: 'configlet',
+                          nodeId: '',
+                          configletList: ckeys,
+                          configletNamesList: cnames,
+                          ignoreConfigletNamesList: [],
+                          ignoreConfigletList: [],
+                          configletBuilderList: [],
+                          configletBuilderNamesList: [],
+                          ignoreConfigletBuilderList: [],
+                          ignoreConfigletBuilderNamesList: [],
+                          toId: device['systemMacAddress'],
+                          toIdType: 'netelement',
+                          fromId: '',
+                          nodeName: '',
+                          fromName: '',
+                          toName: device['fqdn'],
+                          nodeIpAddress: device['ipAddress'],
+                          nodeTargetIpAddress: device['ipAddress'],
+                          childTasks: [],
+                          parentTask: '' }] }
+        log(Logger::DEBUG) do
+          "#{__method__}: saveTopology data #{data['data']}"
+        end
+        add_temp_action(data)
+        save_topology_v2([])
+      end
+      # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
     end
   end
 end
