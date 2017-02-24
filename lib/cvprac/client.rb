@@ -320,9 +320,22 @@ class CvpClient
     log(Logger::DEBUG) do
       "entering make_request #{method} "\
       "endpoint: #{endpoint}"\
-      " with query: #{opts.inspect}"
+      " with query: #{opts[:data].inspect}" \
+      " with body: #{opts[:body].inspect}"
     end
     raise 'No valid session to a CVP node. Use #connect()' unless @session
+
+    # Ensure body is valid JSON
+    if opts[:body]
+      case opts[:body]
+      when String
+        JSON.parse(opts[:body])
+      when Hash, Array
+        opts[:body] = opts[:body].to_json
+      else
+        raise ArgumentError, "Unable to coerce body to JSON: #{opts[:body]}"
+      end
+    end
 
     url = @url_prefix + endpoint
     uri = URI(url)
