@@ -33,7 +33,7 @@
 require 'json'
 require 'pp'
 require 'require_all'
-require_all 'lib/cvprac/api/*.rb'
+require_rel 'api/*.rb'
 
 # Abstract methods for interacting with Arista CloudVision
 #
