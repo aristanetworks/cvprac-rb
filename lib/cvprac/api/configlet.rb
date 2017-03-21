@@ -35,6 +35,7 @@ module Cvprac
   # CVP Configlet api methods
   module Api
     # CVP Configlet api methods
+    # rubocop:disable Metrics/ModuleLength
     module Configlet
       # @!group Configlet Method Summary
 
@@ -57,11 +58,6 @@ module Cvprac
         end
         resp = @clnt.post('/configlet/addConfiglet.do',
                           body: { name: name, config: config.to_s }.to_json)
-        # data = @clnt.get('/configlet/getConfigletByName.do',
-        #                  data: { name: name })
-        # print "Result: #{data.inspect}"
-        # data['data']
-        # print "Result: #{resp.inspect}"
         log(Logger::DEBUG) do
           "add_configlet: #{name} Response: #{resp.inspect}"
         end
@@ -202,6 +198,75 @@ module Cvprac
 
         info = "#{app_name}: Configlet Assign: to Device #{device['fqdn']}"
         info_preview = "<b>Configlet Assign:</b> to Device #{device['fqdn']}"
+        data = { data: [{ id: 1,
+                          info: info,
+                          infoPreview: info_preview,
+                          note: '',
+                          action: 'associate',
+                          nodeType: 'configlet',
+                          nodeId: '',
+                          configletList: ckeys,
+                          configletNamesList: cnames,
+                          ignoreConfigletNamesList: [],
+                          ignoreConfigletList: [],
+                          configletBuilderList: [],
+                          configletBuilderNamesList: [],
+                          ignoreConfigletBuilderList: [],
+                          ignoreConfigletBuilderNamesList: [],
+                          toId: device['systemMacAddress'],
+                          toIdType: 'netelement',
+                          fromId: '',
+                          nodeName: '',
+                          fromName: '',
+                          toName: device['fqdn'],
+                          nodeIpAddress: device['ipAddress'],
+                          nodeTargetIpAddress: device['ipAddress'],
+                          childTasks: [],
+                          parentTask: '' }] }
+        log(Logger::DEBUG) do
+          "#{__method__}: saveTopology data #{data['data']}"
+        end
+        add_temp_action(data)
+        save_topology_v2([])
+      end
+
+      # Remove configlets from a device
+      #
+      # @param [String] app_name The name to use in the info field
+      # @param [Hash] device Device definition from #get_device_by_id()
+      # @param [Hash] configlets List of configlet name & key pairs to remove
+      #
+      # @return [Hash] Hash including status and a list of task IDs created,
+      #   if any
+      #
+      # @example
+      #    result = api.remove_configlets_from_device('test',
+      #                                               {...},
+      #                                               [{'name' => 'configlet',
+      #                                                 'key' => '...'}])
+      #    => {"data"=>{"taskIds"=>["8"], "status"=>"success"}}
+      #
+      def remove_configlets_from_device(app_name, device, configlets)
+        log(Logger::DEBUG) { "#{__method__}: #{app_name}" }
+
+        # get the list of existing configlets
+        curr_cfglts = get_configlets_by_device_id(device['systemMacAddress'])
+
+        # Get a list of the configlet names and keys
+        cnames = []
+        ckeys = []
+        curr_cfglts.each do |configlet|
+          cnames << configlet['name']
+          ckeys << configlet['key']
+        end
+
+        configlets.each do |configlet|
+          cnames.delete(configlet['name'])
+          ckeys.delete(configlet['key'])
+        end
+
+        info = "#{app_name}: Configlet Remove from Device #{device['fqdn']}"
+        info_preview = "<b>Configlet Remove:</b> from Device #{device['fqdn']}"
         data = { data: [{ id: 1,
                           info: info,
                           infoPreview: info_preview,
