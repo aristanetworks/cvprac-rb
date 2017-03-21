@@ -48,8 +48,6 @@ module Cvprac
         begin
           task = @clnt.get('/task/getTaskById.do', data: { taskId: task_id })
         rescue CvpApiError => e
-          # puts e.message
-          # puts e.backtrace.inspect
           if e.to_s.include?('Invalid WorkOrderId') ||
              e.to_s.include?('Entity does not exist')
             return nil
@@ -57,6 +55,29 @@ module Cvprac
         end
         task
       end
+
+      # Get task data by device name (FQDN)
+      #
+      # @param [String] device Name (FQDN) of a device
+      #
+      # @return [Hash] request body
+      # rubocop:disable Metrics/MethodLength
+      def get_pending_tasks_by_device(device)
+        log(Logger::DEBUG) { "#{__method__}: device: #{device}" }
+        begin
+          task = @clnt.get('/task/getTasks.do', data: { queryparam: 'Pending',
+                                                        startIndex: 0,
+                                                        endIndex: 0 })
+        rescue CvpApiError => e
+          if e.to_s.include?('Invalid WorkOrderId') ||
+             e.to_s.include?('Entity does not exist')
+            return nil
+          end
+        end
+        # TODO: filter tasks by device
+        task['data']
+      end
+      # rubocop:enable Metrics/MethodLength
 
       # Add note to CVP task by taskID
       #
