@@ -109,6 +109,28 @@ RSpec.describe CvpApi do
     end
   end
 
+  describe '#add_configlet' do
+    let(:verb) { :post }
+    let(:url) { 'https://cvp1.example.com/web/configlet/addConfiglet.do' }
+    let(:resp_body) { %({ "data": "configlet_1869686_21062192619368001" }) }
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.add_configlet('api_test_3',
+                        "interface Ethernet1\n   no shutdown")
+    end
+    it 'returns a string' do
+      expect(response).to be_kind_of(String)
+    end
+    it 'returns the configlet key' do
+      expect(response).to eq(JSON.parse(resp_body)['data'])
+    end
+  end
+
   describe '#delete_configlet' do
     let(:verb) { :post }
     let(:url) { 'https://cvp1.example.com/web/configlet/deleteConfiglet.do' }
@@ -166,7 +188,7 @@ RSpec.describe CvpApi do
     it 'returns a string' do
       expect(response).to be_kind_of(String)
     end
-    it 'returns the CVP version' do
+    it 'returns a string message' do
       expect(response).to eq(JSON.parse(resp_body)['data'])
     end
 
@@ -243,6 +265,320 @@ RSpec.describe CvpApi do
         end.to raise_error(CvpApiError,
                            /errorCode: 132801: Entity does not exist/)
       end
+    end
+  end
+
+  describe 'Adding & removing configlets to devices' do
+    let(:verb) { :get }
+    let(:params) { '?name=api_test_3' }
+    let(:url) do
+      'https://cvp1.example.com/web/configlet/getConfigletByName.do' + params
+    end
+    let(:resp_body) do
+      '{"isDefault":"no","containerCount":0,"netElementCount":0,'\
+      '"isAutoBuilder":"false","reconciled":false,'\
+      '"dateTimeInLongFormat":1485917316929,"factoryId":1,"config":'\
+      '"!username admin privilege 15 role network-admin secret 0'\
+      ' admin\n!username cvpadmin privilege 15 role network-admin secret 0'\
+      ' arista123\nusername admin privilege 15 role network-admin secret 5 '\
+      '$1$7IJPvFto$.3IzcPDr5MJiBID8iCEFb1 \nusername cvpadmin privilege 15 '\
+      'role network-admin secret 5 $1$e8zc.bhO$G1YLdeQGXLBS1J8T.oeJT/ \n! \n'\
+      'management api http-commands\nno shutdown\n","user":"cvpadmin",'\
+      '"note":null,"name":"api_test_0",'\
+      '"key":"configlet_1864975_16872535216220299","id":3,"type":"Static" }'
+    end
+    let(:configlets_by_device) do
+      [{ 'isDefault' => 'no',
+         'containerCount' => 0,
+         'netElementCount' => 0,
+         'isAutoBuilder' => 'false',
+         'reconciled' => false,
+         'dateTimeInLongFormat' => 1_488_396_770_908,
+         'factoryId' => 1,
+         'config' => "interface ethernet4\n   description Puppet was rot here"\
+         "\nend",
+         'user' => 'cvpadmin',
+         'note' => nil,
+         'name' => 'api_test_1',
+         'key' => 'configlet_1866269_19351988468666178',
+         'id' => 3,
+         'type' => 'Static' },
+       { 'isDefault' => 'no',
+         'containerCount' => 0,
+         'netElementCount' => 0,
+         'isAutoBuilder' => 'true',
+         'reconciled' => false,
+         'dateTimeInLongFormat' => 1_473_364_667_402,
+         'factoryId' => 1,
+         'config' => '',
+         'user' => 'cvpadmin',
+         'note' => nil,
+         'name' => 'configlet_ipam_builder',
+         'key' => 'configletBuilderMapper_19_22638914337350',
+         'id' => 3,
+         'type' => 'Builder' },
+       { 'isDefault' => 'no',
+         'containerCount' => 0,
+         'netElementCount' => 0,
+         'isAutoBuilder' => 'false',
+         'reconciled' => false,
+         'dateTimeInLongFormat' => 1_469_068_927_533,
+         'factoryId' => 1,
+         'config' =>
+           "hostname veos-l-11\ninterface Management1\n"\
+           "   ip address 192.0.2.200/24\nip routing\n"\
+           "ip route vrf default 0.0.0.0/0 192.0.2.254\n"\
+           "ip name-server vrf default 192.0.2.254\n"\
+           "ip domain-name aristanetworks.com\n",
+         'user' => 'cvpadmin',
+         'note' => nil,
+         'name' => 'configlet_ipam_builder_192.0.2.200_1',
+         'key' => 'configlet_70_24148965410223',
+         'id' => 3,
+         'type' => 'Generated' },
+       { 'isDefault' => 'no',
+         'containerCount' => 0,
+         'netElementCount' => 0,
+         'isAutoBuilder' => 'false',
+         'reconciled' => false,
+         'dateTimeInLongFormat' => 1_469_067_229_602,
+         'factoryId' => 1,
+         'config' =>
+           "!username admin privilege 15 role network-admin secret 0 admin\n"\
+           '!username cvpadmin privilege 15 role network-admin secret 0 '\
+           "arista123\nusername admin privilege 15 role network-admin secret 5"\
+           " $1$7IJPvFto$.3IzcPDr5MJiBID8iCEFb1 \nusername cvpadmin privilege "\
+           '15 role network-admin secret 5 '\
+           "$1$e8zc.bhO$G1YLdeQGXLBS1J8T.oeJT/ \n! \n"\
+           "management api http-commands\nno shutdown\n",
+         'user' => 'cvpadmin',
+         'note' => nil,
+         'name' => 'cvp_base',
+         'key' => 'configlet_17_22451036385055',
+         'id' => 3,
+         'type' => 'Static' },
+       { 'isDefault' => 'no',
+         'containerCount' => 0,
+         'netElementCount' => 0,
+         'isAutoBuilder' => 'false',
+         'reconciled' => false,
+         'dateTimeInLongFormat' => 1_488_799_943_078,
+         'factoryId' => 1,
+         'config' =>
+           "interface Ethernet2\n   description Host esx3-10 managed by puppet"\
+           " template cloudvision/esx_host.erb\n   ! Insert more configuration"\
+           " here.\n   no shutdown\nend",
+         'user' => 'cvpadmin',
+         'note' => nil,
+         'name' => 'dc1-rackb3-tor-port-2',
+         'key' => 'configlet_1865173_17102357801295204',
+         'id' => 3,
+         'type' => 'Static' }]
+    end
+    let(:device) do
+      { 'ipAddress' => '192.0.2.200',
+        'modelName' => 'vEOS',
+        'internalVersion' => '4.15.3F-2812776.4153F',
+        'systemMacAddress' => '00:50:56:60:2c:a8',
+        'memTotal' => 1_897_596,
+        'bootupTimeStamp' => 1_473_364_832.23,
+        'memFree' => 480_740,
+        'architecture' => 'i386',
+        'internalBuildId' => '34549125-b84f-41f0-b8bb-ce9d509814de',
+        'hardwareRevision' => '',
+        'fqdn' => 'veos-l-11.aristanetworks.com',
+        'taskIdList' => [],
+        'isDANZEnabled' => 'no',
+        'isMLAGEnabled' => 'no',
+        'ztpMode' => 'false',
+        'complianceCode' => '0000',
+        'version' => '4.15.3F',
+        'complianceIndication' => 'NONE',
+        'lastSyncUp' => 1_489_780_465_614,
+        'tempAction' => nil,
+        'serialNumber' => '',
+        'key' => '00:50:56:60:2c:a8',
+        'type' => 'netelement' }
+    end
+
+    before do
+      allow(api).to receive(:get_configlets_by_device_id)
+        .and_return(configlets_by_device)
+      allow(api).to receive(:add_temp_action)
+      allow(api).to receive(:save_topology_v2)
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+
+    describe '#apply_configlets_to_device' do
+      let(:response) do
+        api.apply_configlets_to_device('Puppet', '00:50:56:60:2c:a8',
+                                       [{ 'name' => 'new_configlet',
+                                          'key' => '12345678' }])
+      end
+
+      it 'returns nil' do
+        expect(response).to be_nil
+      end
+    end
+
+    describe '#remove_configlets_from_device' do
+      let(:response) do
+        api.remove_configlets_from_device('Puppet', '00:50:56:60:2c:a8',
+                                          [{ 'name' => 'old_configlet',
+                                             'key' => '12345678' }])
+      end
+
+      it 'returns nil' do
+        expect(response).to be_nil
+      end
+    end
+  end
+
+  #
+  # Provisioning
+  #
+  describe '#get_configlets_by_device_id' do
+    let(:verb) { :get }
+    let(:params) do
+      '?netElementId=00:50:56:60:2c:a8&queryParam&startIndex=0&endIndex=0'
+    end
+    let(:url) do
+      'https://cvp1.example.com/web/'\
+      'provisioning/getConfigletsByNetElementId.do' + params
+    end
+    let(:resp_body) do
+      '{"total":5,"configletList":[{"isDefault":"no","containerCount":0,'\
+      '"netElementCount":0,"isAutoBuilder":"false","reconciled":false,'\
+      '"dateTimeInLongFormat":1488396770908,"factoryId":1,'\
+      '"config":"interface ethernet4\n   description Puppet was rot here\nend"'\
+      ',"user":"cvpadmin","note":null,"name":"api_test_1","key":'\
+      '"configlet_1866269_19351988468666178","id":3,"type":"Static"},'\
+      '{"isDefault":"no","containerCount":0,"netElementCount":0,'\
+      '"isAutoBuilder":"true","reconciled":false,"dateTimeInLongFormat":'\
+      '1473364667402,"factoryId":1,"config":"","user":"cvpadmin","note":null,'\
+      '"name":"configlet_ipam_builder","key":'\
+      '"configletBuilderMapper_19_22638914337350","id":3,"type":"Builder"},'\
+      '{"isDefault":"no","containerCount":0,"netElementCount":0,'\
+      '"isAutoBuilder":"false","reconciled":false,'\
+      '"dateTimeInLongFormat":1469068927533,"factoryId":1,"config":'\
+      '"hostname veos-l-11\ninterface Management1\n'\
+      'ip address 192.0.2.200/24\nip routing\n'\
+      'ip route vrf default 0.0.0.0/0 192.0.2.254\n'\
+      'ip name-server vrf default 192.0.2.254\n'\
+      'ip domain-name aristanetworks.com\n","user":"cvpadmin","note":null,'\
+      '"name":"configlet_ipam_builder_192.0.2.200_1",'\
+      '"key":"configlet_70_24148965410223","id":3,"type":"Generated"},'\
+      '{"isDefault":"no","containerCount":0,"netElementCount":0,'\
+      '"isAutoBuilder":"false","reconciled":false,'\
+      '"dateTimeInLongFormat":1469067229602,"factoryId":1,"config":'\
+      '"!username admin privilege 15 role network-admin secret 0 admin\n'\
+      '!username cvpadmin privilege 15 role network-admin secret 0 arista123\n'\
+      'username admin privilege 15 role network-admin secret 5 '\
+      '$1$7IJPvFto$.3IzcPDr5MJiBID8iCEFb1 \n'\
+      'username cvpadmin privilege 15 role network-admin secret 5 '\
+      '$1$e8zc.bhO$G1YLdeQGXLBS1J8T.oeJT/ \n! \nmanagement api http-commands\n'\
+      'no shutdown\n","user":"cvpadmin","note":null,"name":"cvp_base",'\
+      '"key":"configlet_17_22451036385055","id":3,"type":"Static"},'\
+      '{"isDefault":"no","containerCount":0,"netElementCount":0,'\
+      '"isAutoBuilder":"false","reconciled":false,'\
+      '"dateTimeInLongFormat":1488799943078,"factoryId":1,"config":'\
+      '"interface Ethernet2\n   description Host esx3-10 managed by puppet '\
+      'template cloudvision/esx_host.erb\n'\
+      '! Insert more configuration here.\n   no shutdown\nend",'\
+      '"user":"cvpadmin","note":null,"name":"dc1-rackb3-tor-port-2",'\
+      '"key":"configlet_1865173_17102357801295204","id":3,"type":"Static"}]}'
+    end
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.get_configlets_by_device_id('00:50:56:60:2c:a8')
+    end
+    it 'returns a list' do
+      expect(response).to be_kind_of(Array)
+    end
+    it 'returns value of the configletList key' do
+      expect(response).to eq(JSON.parse(resp_body)['configletList'])
+    end
+  end
+
+  describe '#add_temp_action' do
+    let(:verb) { :post }
+    let(:param) { '?format=topology&queryParam&nodeId=root' }
+    let(:url) do
+      'https://cvp1.example.com/web/provisioning/addTempAction.do' + param
+    end
+    let(:resp_body) do
+      '{"topology":{"parentContainerId":null,"childNetElementCount":0,'\
+      '"hierarchyNetElementCount":1,"childContainerList":'\
+      '[{"parentContainerId":"root","childNetElementCount":0,'\
+      '"hierarchyNetElementCount":0,"childContainerList":[],"mode":"expand",'\
+      '"tempAction":[],"childNetElementList":[],"childContainerCount":0,'\
+      '"childTaskCount":0,"tempEvent":[],"name":"Undefined","key":'\
+      '"undefined_container","type":"container"},{"parentContainerId":"root",'\
+      '"childNetElementCount":0,"hierarchyNetElementCount":1,'\
+      '"childContainerList":[{"parentContainerId":'\
+      '"container_75_24208172274122","childNetElementCount":1,'\
+      '"hierarchyNetElementCount":1,"childContainerList":[],"mode":"expand",'\
+      '"tempAction":[],"childNetElementList":[{"ipAddress":"192.0.2.200",'\
+      '"modelName":"vEOS","internalVersion":"4.15.3F-2812776.4153F",'\
+      '"systemMacAddress":"00:50:56:60:2c:a8","memTotal":1897596,'\
+      '"bootupTimeStamp":1.47336483223E9,"memFree":480740,"architecture":'\
+      '"i386","internalBuildId":"34549125-b84f-41f0-b8bb-ce9d509814de",'\
+      '"hardwareRevision":"","fqdn":"veos-l-11.aristanetworks.com",'\
+      '"taskIdList":[],"isDANZEnabled":"no","isMLAGEnabled":"no",'\
+      '"ztpMode":"false","complianceCode":"0000","version":"4.15.3F",'\
+      '"complianceIndication":"NONE","lastSyncUp":1489780465614,'\
+      '"tempAction":[{"imageBundleId":"","taskId":1,"configletList":'\
+      '["configlet_1866269_19351988468666178",'\
+      '"configletBuilderMapper_19_22638914337350",'\
+      '"configlet_70_24148965410223","configlet_17_22451036385055",'\
+      '"configlet_1865173_17102357801295204"],"configletNamesList":'\
+      '["api_test_1","configlet_ipam_builder",'\
+      '"configlet_ipam_builder_192.0.2.200_1","cvp_base",'\
+      '"dc1-rackb3-tor-port-2"],"ignoreConfigletNamesList":[],'\
+      '"ignoreConfigletList":[],"oldNodeName":"","toId":"00:50:56:60:2c:a8",'\
+      '"fromId":"","toName":"veos-l-11.aristanetworks.com","fromName":"",'\
+      '"childTasks":[],"parentTask":"","nodeId":"","toIdType":"netelement",'\
+      '"infoPreview":"preview","nodeList":[],"ignoreNodeList":[],'\
+      '"nodeNamesList":[],"ignoreNodeNamesList":[],"nodeIpAddress":'\
+      '"192.0.2.200","nodeTargetIpAddress":"192.0.2.200","ignoreNodeId":"",'\
+      '"ignoreNodeName":"","configletBuilderList":[],'\
+      '"configletBuilderNamesList":[],"ignoreConfigletBuilderList":[],'\
+      '"ignoreConfigletBuilderNamesList":[],"pageType":"",'\
+      '"viaContainer":false,"factoryId":1,"user":"cvpadmin","action":'\
+      '"associate","mode":"expand","nodeType":"configlet","nodeName":"",'\
+      '"info":"info","note":"","key":"tempAction_1869738_21167427322161407",'\
+      '"id":33}],"serialNumber":"","key":"00:50:56:60:2c:a8","type":'\
+      '"netelement"}],"childContainerCount":0,"childTaskCount":0,'\
+      '"tempEvent":[],"name":"Spines","key":"container_76_24208204830466",'\
+      '"type":"container"}],"mode":"expand","tempAction":[],'\
+      '"childNetElementList":[],"childContainerCount":1,"childTaskCount":0,'\
+      '"tempEvent":[],"name":"DC1","key":"container_75_24208172274122",'\
+      '"type":"container"}],"mode":"expand","tempAction":[],'\
+      '"childNetElementList":[],"childContainerCount":2,"childTaskCount":0,'\
+      '"tempEvent":[],"name":"Tenant","key":"root","type":"container"},'\
+      '"type":"topology"}'
+    end
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.send(:add_temp_action, {})
+    end
+    it 'returns a list' do
+      expect(response).to be_kind_of(Hash)
+    end
+    it 'returns a response' do
+      expect(response).to eq(JSON.parse(resp_body))
     end
   end
 end
