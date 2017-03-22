@@ -71,7 +71,7 @@ module Cvprac
       # @param [Hash] data the data object to process
       #   Ex: data = {'data': [{specific key/value pairs}]}
       #
-      # @return [Array] List of configlets applied to the device
+      # @return [Hash] A Topology hash
       # rubocop:disable Metrics/MethodLength
       def add_temp_action(data)
         log(Logger::DEBUG) do
