@@ -437,6 +437,34 @@ RSpec.describe CvpApi do
   end
 
   #
+  # Inventory
+  #
+
+  describe '#get_device_by_name' do
+    let(:verb) { :get }
+    let(:params) { '?queryparam=device-1.example.com&startIndex=0&endIndex=0' }
+    let(:url) do
+      'https://cvp1.example.com/web/inventory/getInventory.do' + params
+    end
+    let(:resp_body) { fixture('getInventory_response') }
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.get_device_by_name('device-1.example.com')
+    end
+    it 'returns a device hash' do
+      expect(response).to be_kind_of(Hash)
+    end
+    it 'returns the unique matching value from the response' do
+      expect(response).to eq(JSON.parse(resp_body)['netElementList'][0])
+    end
+  end
+
+  #
   # Provisioning
   #
   describe '#get_configlets_by_device_id' do
