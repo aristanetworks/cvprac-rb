@@ -523,11 +523,83 @@ RSpec.describe CvpApi do
     let(:response) do
       api.send(:add_temp_action, {})
     end
-    it 'returns a list' do
+    it 'returns a hash' do
       expect(response).to be_kind_of(Hash)
     end
     it 'returns a response' do
       expect(response).to eq(JSON.parse(resp_body))
+    end
+  end
+
+  describe '#save_topology_v2' do
+    let(:verb) { :post }
+    let(:url) do
+      'https://cvp1.example.com/web/provisioning/v2/saveTopology.do'
+    end
+    let(:resp_body) do
+      '{"data":{"taskIds":[],"status":"success"}}'
+    end
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.send(:save_topology_v2, {})
+    end
+    it 'returns a hash' do
+      expect(response).to be_kind_of(Hash)
+    end
+    it 'returns a response' do
+      expect(response).to eq(JSON.parse(resp_body))
+    end
+  end
+
+  #
+  # Tasks
+  #
+
+  describe '#get_task_by_id' do
+    let(:verb) { :get }
+    let(:params) { '?taskId=3' }
+    let(:url) do
+      'https://cvp1.example.com/web/task/getTaskById.do' + params
+    end
+
+    context 'with a valid task_id' do
+      let(:resp_body) { fixture('addTempAction_response') }
+      before do
+        stub_request(verb, url)
+          .with(headers: good_headers)
+          .to_return(body: resp_body)
+      end
+      let(:response) do
+        api.get_task_by_id(3)
+      end
+      it 'returns a hash' do
+        expect(response).to be_kind_of(Hash)
+      end
+      it 'returns a response' do
+        expect(response).to eq(JSON.parse(resp_body))
+      end
+    end
+
+    context 'with invalid task_id' do
+      let(:resp_body) do
+        '{"errorCode":"142WF606","errorMessage":"Invalid WorkOrderId"}'
+      end
+      before do
+        stub_request(verb, url)
+          .with(headers: good_headers)
+          .to_return(body: resp_body)
+      end
+      let(:response) do
+        api.get_task_by_id(3)
+      end
+      it 'returns nil' do
+        expect(response).to be_nil
+      end
     end
   end
 end
