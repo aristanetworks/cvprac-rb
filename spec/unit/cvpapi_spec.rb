@@ -603,6 +603,47 @@ RSpec.describe CvpApi do
     end
   end
 
+  describe '#get_pending_tasks_by_device' do
+    let(:verb) { :get }
+    let(:params) { '?queryparam=Pending&startIndex=0&endIndex=0' }
+    let(:url) { 'https://cvp1.example.com/web/task/getTasks.do' + params }
+    let(:resp_body) { %({"total":0,"data":[]}) }
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.get_pending_tasks_by_device('device-1.example.com')
+    end
+    it 'returns a list of task objects' do
+      expect(response).to be_kind_of(Array)
+    end
+    it 'returns the "data" value from the response' do
+      expect(response).to eq(JSON.parse(resp_body)['data'])
+    end
+  end
+
+  describe '#add_note_to_task' do
+    let(:verb) { :post }
+    let(:params) { '?workOrderId=3&note=text' }
+    let(:url) { 'https://cvp1.example.com/web/task/addNoteToTask.do' + params }
+    let(:resp_body) { %({ "data": "Success" }) }
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers)
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.add_note_to_task(3, 'text')
+    end
+    it 'returns a Hash' do
+      expect(response).to be_kind_of(Hash)
+    end
+  end
+
   describe '#execute_task' do
     let(:verb) { :post }
     let(:url) { 'https://cvp1.example.com/web/task/executeTask.do' }
