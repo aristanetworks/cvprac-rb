@@ -602,4 +602,23 @@ RSpec.describe CvpApi do
       end
     end
   end
+
+  describe '#execute_task' do
+    let(:verb) { :post }
+    let(:url) { 'https://cvp1.example.com/web/task/executeTask.do' }
+    let(:resp_body) { %({ "data": "Success" }) }
+
+    before do
+      stub_request(verb, url)
+        .with(headers: good_headers,
+              body: '{"data":[3]}')
+        .to_return(body: resp_body)
+    end
+    let(:response) do
+      api.execute_task(3)
+    end
+    it 'returns a Hash' do
+      expect(response).to be_kind_of(Hash)
+    end
+  end
 end
