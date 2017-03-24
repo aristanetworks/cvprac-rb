@@ -117,7 +117,7 @@ node('puppet') {
                 from: 'eosplus-dev+jenkins@arista',
                 replyTo: 'eosplus-dev@arista',
                 subject: "cvprac-rb ${env.JOB_NAME} (${env.BUILD_NUMBER}) build successful",
-                to: 'jere@arista.com'
+                to: 'eosplus-dev@arista.com'
 
         }
 
@@ -132,7 +132,7 @@ node('puppet') {
                  from: 'eosplus-dev+jenkins@arista.com',
                  replyTo: 'eosplus-dev+jenkins@arista.com',
                  subject: "cvprac-rb ${env.JOB_NAME} (${env.BUILD_NUMBER}) build failed",
-                 to: 'jere@arista.com'
+                 to: 'eosplus-dev@arista.com'
 
             throw err
     }
