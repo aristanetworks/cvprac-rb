@@ -32,7 +32,7 @@
 
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 module Cvprac
-  # CVP Configlet api methods
+  # Cvprac::Api namespace
   module Api
     # CVP Configlet api methods
     # rubocop:disable Metrics/ModuleLength

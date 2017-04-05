@@ -34,7 +34,7 @@
 module Cvprac
   # Cvprac::Api namespace
   module Api
-    # CVP Info api methods
+    # CVP provisioning api methods
     module Provisioning
       # @!group Provisioning Method Summary
 

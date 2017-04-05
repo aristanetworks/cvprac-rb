@@ -34,7 +34,7 @@
 module Cvprac
   # Cvprac::Api namespace
   module Api
-    # CVP Info api methods
+    # CVP Inventory api methods
     module Inventory
       # @!group Inventory Method Summary
 
