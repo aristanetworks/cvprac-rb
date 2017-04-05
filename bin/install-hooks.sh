@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
 
+# USAGE: bin/install-hooks.sh
+
+# install-hooks.sh will setup or repair (in many cases) symlinks from your
+# .git/hooks/ directory to the git hook scripts in this repo.  These scripts
+# ensure certain checks succeed before the git action is completed.  The most
+# common example is the pre-commit hook which usually checks syntax and style
+# before a commit can continue.
+
 HOOKS=('pre-commit.sh')
 
 for script in "${HOOKS[@]}"; do
