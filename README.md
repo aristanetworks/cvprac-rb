@@ -84,10 +84,9 @@ require ‘cvprac’
 cvp = CvpClient.new
 cvp.connect(['192.0.2.101', '192.0.2.102, '192.0.2.103'],
             'cvpadmin', 'arista123')
-result = { "version": "2016.1.1" }{ "version": "2016.1.1" i
-cvp.get('/cvpInfo/getCvpInfo.do')
+result = cvp.get('/cvpInfo/getCvpInfo.do')
 print result
-{"version"=>"2016.1.1"}
+{“appVersion”=>”Phase_2_Sprint_34_HF09”, “version”=>”2017.1.0.1”}
 
 result = cvp.get('/user/getUsers.do',
                  data: { queryparam: nil, startIndex: 0, endIndex: 0 })
@@ -118,7 +117,7 @@ cvp.connect(['192.0.2.101', '192.0.2.102, '192.0.2.103'],
 
 result = cvp.api.get_cvp_info
 print result
-=> {"version"=>"2016.1.1"}
+=> {“appVersion”=>”Phase_2_Sprint_34_HF09”, “version”=>”2017.1.0.1”}
 ```
 
 ### Notes for API Class Usage
