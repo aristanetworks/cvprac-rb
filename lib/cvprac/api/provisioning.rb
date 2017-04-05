@@ -66,7 +66,7 @@ module Cvprac
 
       private
 
-      # Add a temp action that requires a saveTopology call to take effect.
+      # Add a temp action. Requires a save_topology_v2() call to take effect.
       #
       # @param [Hash] data the data object to process
       #   Ex: data = {'data': [{specific key/value pairs}]}
