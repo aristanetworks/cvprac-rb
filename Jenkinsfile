@@ -84,6 +84,14 @@ node('puppet') {
                   unHealthy: ''
             ])
 
+            step([
+                $class: 'RcovPublisher',
+                reportDir: "coverage/rcov",
+                targets: [
+                    [metric: "CODE_COVERAGE", healthy: 90, unhealthy: 80, unstable: 50]
+                ]
+            ])
+
             // publish html
             // snippet generator doesn't include "target:"
             // https://issues.jenkins-ci.org/browse/JENKINS-29711.
@@ -109,7 +117,7 @@ node('puppet') {
                 from: 'eosplus-dev+jenkins@arista',
                 replyTo: 'eosplus-dev@arista',
                 subject: "cvprac-rb ${env.JOB_NAME} (${env.BUILD_NUMBER}) build successful",
-                to: 'jere@arista.com'
+                to: 'eosplus-dev@arista.com'
 
         }
 
@@ -124,7 +132,7 @@ node('puppet') {
                  from: 'eosplus-dev+jenkins@arista.com',
                  replyTo: 'eosplus-dev+jenkins@arista.com',
                  subject: "cvprac-rb ${env.JOB_NAME} (${env.BUILD_NUMBER}) build failed",
-                 to: 'jere@arista.com'
+                 to: 'eosplus-dev@arista.com'
 
             throw err
     }

@@ -3,7 +3,7 @@ lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'cvprac/version'
 
-# rubocop:disable Metrics/BlockLength,Style/UnneededPercentQ
+# rubocop:disable Style/UnneededPercentQ
 Gem::Specification.new do |spec|
   spec.name          = 'cvprac'
   spec.version       = Cvprac::VERSION
@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
 
   # spec.add_runtime_dependency 'inifile', '~> 0'
   spec.add_runtime_dependency 'http-cookie'
+  spec.add_runtime_dependency 'require_all'
 
   spec.add_development_dependency 'bump'
   spec.add_development_dependency 'bundler'
@@ -39,6 +40,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'pry-remote'
   spec.add_development_dependency 'pry-nav'
   spec.add_development_dependency 'rake'
+  spec.add_development_dependency 'rb-readline'
   spec.add_development_dependency 'rspec'
   spec.add_development_dependency 'rspec-core'
   spec.add_development_dependency 'rspec-expectations'
@@ -46,7 +48,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rspec-nc'
   spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'simplecov'
-  spec.add_development_dependency 'simplecov-json'
   spec.add_development_dependency 'simplecov-rcov'
   spec.add_development_dependency 'webmock'
   spec.add_development_dependency 'yard'

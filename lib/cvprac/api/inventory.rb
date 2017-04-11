@@ -1,6 +1,7 @@
+# encoding: utf-8
 # BSD 3-Clause License
 #
-# Copyright (c) 2016, Arista Networks EOS+
+# Copyright (c) 2017, Arista Networks EOS+
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,15 +28,33 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-require 'cvprac/version'
-require 'cvprac/client_errors'
-require 'cvprac/client'
-require 'cvprac/api'
-
-# Top level definition of Cvprac
 #
+
+# @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 module Cvprac
-  # Your code goes here...
-  true
+  # Cvprac::Api namespace
+  module Api
+    # CVP Info api methods
+    module Inventory
+      # @!group Inventory Method Summary
+
+      # Get device (NetElement) by name (fqdn)
+      #
+      # @param [String] fqdn The FQDN (name) of the desired device
+      #
+      # @return [Hash] CVP NetElement data.
+      def get_device_by_name(fqdn)
+        log(Logger::DEBUG) { "get_device_by_name: #{fqdn}" }
+        res = @clnt.get('/inventory/getInventory.do',
+                        data: { queryparam: fqdn,
+                                startIndex: 0,
+                                endIndex: 0 })
+        return {} if res['netElementList'].length.zero?
+        res['netElementList'].each do |element|
+          return element if element['fqdn'] == fqdn
+        end
+        {}
+      end
+    end
+  end
 end

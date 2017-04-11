@@ -1,6 +1,7 @@
+# encoding: utf-8
 # BSD 3-Clause License
 #
-# Copyright (c) 2016, Arista Networks EOS+
+# Copyright (c) 2017, Arista Networks EOS+
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,15 +28,25 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-require 'cvprac/version'
-require 'cvprac/client_errors'
-require 'cvprac/client'
-require 'cvprac/api'
-
-# Top level definition of Cvprac
 #
+
+# @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 module Cvprac
-  # Your code goes here...
-  true
+  # Cvprac::Api namespace
+  module Api
+    # CVP Info api methods
+    module Info
+      # rubocop:disable Style/AccessorMethodName
+      # @!group Info Method Summary
+
+      # Get CVP version information
+      #
+      # @return [Hash] CVP Version data. Ex: {"version"=>"2016.1.1"}
+      def get_cvp_info
+        @clnt.get('/cvpInfo/getCvpInfo.do')
+        # return @clnt.get('/cvpInfo/getCvpInfo.do',
+        #                 timeout: @request_timeout)
+      end
+    end
+  end
 end

@@ -111,8 +111,10 @@ class CvpClient
   #   Logger::ERROR < Logger::FATAL.  This allows the user to increase or
   #   decrease the logging level of the STDOUT log as needed throughout their
   #   application.
+  # @!attribute [rw] api
+  #   An instance of CvpApi
   attr_accessor :agent, :connect_timeout, :headers,
-                :port, :protocol, :ssl_verify_mode, :file_log_level
+                :port, :protocol, :ssl_verify_mode, :file_log_level, :api
 
   # @!attribute [r] cookies
   #   @return [HTTP::CookieJar] HTTP cookies sent with each authenticated
@@ -175,6 +177,9 @@ class CvpClient
       end
     end
     @syslog = Syslog::Logger.new(opts[:filename]) if opts[:syslog]
+
+    # Instantiate the CvpApi class
+    @api = CvpApi.new(self)
 
     log(Logger::INFO, 'CvpClient initialized')
   end
@@ -311,15 +316,28 @@ class CvpClient
   # @return [JSON] parsed response body
   # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
   def make_request(method, endpoint, **opts)
+    opts = { data: nil, body: nil, timeout: 30 }.merge(opts)
     log(Logger::DEBUG) do
       "entering make_request #{method} "\
-                         "endpoint: #{endpoint}"
+      "endpoint: #{endpoint}"\
+      " with query: #{opts[:data].inspect}" \
+      " with body: #{opts[:body].inspect}"
     end
     raise 'No valid session to a CVP node. Use #connect()' unless @session
+
+    # Ensure body is valid JSON
+    if opts[:body]
+      case opts[:body]
+      when String
+        JSON.parse(opts[:body])
+      when Hash, Array
+        opts[:body] = opts[:body].to_json
+      else
+        raise ArgumentError, "Unable to coerce body to JSON: #{opts[:body]}"
+      end
+    end
+
     url = @url_prefix + endpoint
-
-    opts = { data: nil, body: nil, timeout: 30 }.merge(opts)
-
     uri = URI(url)
     uri.query = URI.encode_www_form(opts[:data]) if opts[:data]
     http = Net::HTTP.new(uri.host, uri.port)
@@ -399,7 +417,7 @@ class CvpClient
     node_count -= 1 if all_nodes.nil? && node_count > 1
 
     @error_msg = '\n'
-    (0...node_count).each do |id|
+    (0...node_count).each do
       host = @node_pool.next
       @url_prefix = "#{@protocol}://#{host}:#{@port}/web"
       @http = Net::HTTP.new(host, @port)
@@ -470,8 +488,8 @@ class CvpClient
     log(Logger::DEBUG) { 'Body has an errorCode' }
     body = JSON.parse(response.body)
     if body.key?('errorMessage')
-      msg = "errorCode: #{body['errorCode']}: #{body['errorMessage']}"
-      log(Logger::ERROR) { msg }
+      err_msg = "errorCode: #{body['errorCode']}: #{body['errorMessage']}"
+      log(Logger::ERROR) { err_msg }
     else
       error_list = if body.key?('errors')
                      body['errors']

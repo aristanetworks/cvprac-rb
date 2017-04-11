@@ -1,6 +1,7 @@
+# encoding: utf-8
 # BSD 3-Clause License
 #
-# Copyright (c) 2016, Arista Networks EOS+
+# Copyright (c) 2017, Arista Networks EOS+
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,15 +28,51 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-require 'cvprac/version'
-require 'cvprac/client_errors'
-require 'cvprac/client'
-require 'cvprac/api'
-
-# Top level definition of Cvprac
 #
-module Cvprac
-  # Your code goes here...
-  true
+
+require 'json'
+require 'pp'
+require 'require_all'
+require_rel 'api/*.rb'
+
+# Abstract methods for interacting with Arista CloudVision
+#
+# CvpApi provides high-level, convenience methods which utilize CvpClient for
+# handling communications with CVP.
+#
+# @example Basic usage
+#   require 'cvprac'
+#   cvp = CvpClient.new
+#   cvp.connect(['cvp1', 'cvp2', 'cvp3'], 'cvpadmin', 'arista123')
+#   api = CvpApi.new(cvp)
+#   result = api.get_cvp_info
+#   print result
+#   {"version"=>"2016.1.1"}
+#
+# @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
+class CvpApi
+  # Methods are split into modules by subject.  Pull mothods back into the
+  #   main class here.  New modules in lib/cvprac/api/ must be added.
+  include Cvprac::Api::Info
+  include Cvprac::Api::Configlet
+  include Cvprac::Api::Provisioning
+  include Cvprac::Api::Inventory
+  include Cvprac::Api::Task
+
+  # Initialize a new CvpClient object
+  #
+  # @param [CvpClient] clnt CvpClient object
+  # @param opts [Hash] optional parameters
+  # @option opts [Fixnum] :request_timeout (30) Max seconds for a request
+  def initialize(clnt, **opts)
+    opts = { request_timeout: 30 }.merge(opts)
+    @clnt = clnt
+    @request_timeout = opts[:request_timeout]
+  end
+
+  # @see #CvpClient.log
+  def log(severity = Logger::INFO, msg = nil)
+    msg = yield if block_given?
+    @clnt.log(severity, msg)
+  end
 end
