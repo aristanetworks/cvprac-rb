@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 # BSD 3-Clause License
 #
 # Copyright (c) 2017, Arista Networks EOS+
@@ -256,8 +257,8 @@ module Cvprac
         keep_cnames = []
         keep_ckeys = []
         curr_cfglts.each do |configlet|
-          next if configlets.include?({'name' => configlet['name'],
-                                       'key' => configlet['key']})
+          next if configlets.include?('name' => configlet['name'],
+                                      'key' => configlet['key'])
           keep_cnames << configlet['name']
           keep_ckeys << configlet['key']
         end

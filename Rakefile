@@ -39,5 +39,5 @@ end
 desc 'Run the CI RSpec tests'
 task ci_spec: [:ci_prep, 'ci:setup:rspec', :spec]
 
-task checks: [:rubocop, :spec, :yard]
-task default: [:rubocop, :spec, :yard]
+task checks: %I[rubocop spec yard]
+task default: %I[rubocop spec yard]
