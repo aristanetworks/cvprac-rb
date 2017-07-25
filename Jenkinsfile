@@ -2,73 +2,86 @@
 
 /**
  * Jenkinsfile for cvprac rubygem
+ *
+ * See RVM setup instructions for nodes
+ * https://rvm.io/integration/jenkins
  */
-
-node('puppet') {
-
-    currentBuild.result = "SUCCESS"
-
-    try {
-
-        stage ('Checkout') {
-
-            checkout scm
-            sh """
-                #!/bin/bash -l
-                [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
-                /usr/local/rvm/bin/rvm list
-                rvm use 2.3.3@cvprac-rb --create
-                gem install bundler --no-ri --no-rdoc
-                which ruby
-                ruby --version
-                bin/setup
-            """
+pipeline {
+    agent { label 'puppet' }
+    options {
+        buildDiscarder(
+            // Only keep the 10 most recent builds
+            logRotator(numToKeepStr:'10'))
+    }
+    environment {
+        projectName = 'cvprac rubygem'
+        emailTo = 'jere@arista.com'
+        emailFrom = 'eosplus-dev+jenkins@arista.com'
+    }
+    stages {
+        stage ('Setup Env') {
+            steps {
+                sh """
+                    #!/bin/bash -l
+                    set +x
+                    [[ -s /usr/local/rvm/scripts/rvm ]] && source /usr/local/rvm/scripts/rvm
+                    /usr/local/rvm/bin/rvm list
+                    rvm use 2.3.3@cvprac-rb --create
+                    gem install bundler --no-ri --no-rdoc
+                    set -x
+                    which ruby
+                    ruby --version
+                    bin/setup
+                """
+            }
         }
 
         stage ('Check_style') {
 
-            try {
+            steps {
                 sh """
                     #!/bin/bash -l
+                    set +x
                     source /usr/local/rvm/scripts/rvm
                     rvm use 2.3.3@cvprac-rb
+                    set -x
                     bundle exec rake rubocop || true
                 """
             }
-            catch (Exception err) {
-                currentBuild.result = "UNSTABLE"
-            }
-            echo "RESULT: ${currentBuild.result}"
         }
 
         stage ('RSpec Unittests') {
+            steps {
+                sh """
+                    #!/bin/bash -l
+                    set +x
+                    source /usr/local/rvm/scripts/rvm
+                    rvm use 2.3.3@cvprac-rb
+                    set -x
+                    bundle exec rake ci_spec || true
+                """
 
-            sh """
-                #!/bin/bash -l
-                source /usr/local/rvm/scripts/rvm
-                rvm use 2.3.3@cvprac-rb
-                bundle exec rake ci_spec || true
-            """
-
-            step([$class: 'JUnitResultArchiver', testResults: 'results/*.xml'])
-
+                step([$class: 'JUnitResultArchiver', testResults: 'results/*.xml'])
+            }
         }
 
         stage ('YARD doc generation') {
-
+            steps {
             // wrap([$class: 'AnsiColorSimpleBuildWrapper', colorMapName: "xterm"]) {
                 sh """
                     #!/bin/bash -l
+                    set +x
                     source /usr/local/rvm/scripts/rvm
                     rvm use 2.3.3@cvprac-rb
+                    set -x
                     bundle exec rake yard || true
                 """
             // }
+            }
         }
-
         stage ('Cleanup') {
 
-            echo 'Cleanup'
+            steps {
 
             step([$class: 'WarningsPublisher', 
                   canComputeNew: false,
@@ -111,30 +124,18 @@ node('puppet') {
                 reportFiles: 'index.html',
                 reportName: "YARD Docs"
               ])
-
-           mail body: "${env.BUILD_URL} build successful.\n" +
-                      "Started by ${env.BUILD_CAUSE}",
-                from: 'eosplus-dev+jenkins@arista',
-                replyTo: 'eosplus-dev@arista',
-                subject: "cvprac-rb ${env.JOB_NAME} (${env.BUILD_NUMBER}) build successful",
-                to: 'eosplus-dev@arista.com'
-
+            }
         }
-
     }
 
-    catch (err) {
-
-        currentBuild.result = "FAILURE"
-
-            mail body: "${env.JOB_NAME} (${env.BUILD_NUMBER}) cookbook build error " +
-                       "is here: ${env.BUILD_URL}\nStarted by ${env.BUILD_CAUSE}" ,
-                 from: 'eosplus-dev+jenkins@arista.com',
-                 replyTo: 'eosplus-dev+jenkins@arista.com',
-                 subject: "cvprac-rb ${env.JOB_NAME} (${env.BUILD_NUMBER}) build failed",
-                 to: 'eosplus-dev@arista.com'
-
-            throw err
+    post {
+        success {
+            mail body: "${env.JOB_NAME} (${env.BUILD_NUMBER}) ${env.projectName} build successful\n" +
+                       "Started by ${env.BUILD_CAUSE}",
+                 from: env.emailFrom,
+                 //replyTo: env.emailFrom,
+                 subject: "${env.projectName} ${env.JOB_NAME} (${env.BUILD_NUMBER}) build successful",
+                 to: env.emailTo
+        }
     }
-
 }
