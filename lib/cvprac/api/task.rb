@@ -32,9 +32,9 @@
 
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 module Cvprac
-  # CVP Configlet api methods
+  # CvpRac::Api namespace
   module Api
-    # CVP Configlet api methods
+    # CVP Task api methods
     module Task
       # @!group Task Method Summary
 

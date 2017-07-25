@@ -1,15 +1,17 @@
 #!/bin/sh
+set -u -o pipefail
 #
-# An example hook script to verify what is about to be committed.
-# Called by "git commit" with no arguments.  The hook should
-# exit with non-zero status after issuing an appropriate message if
-# it wants to stop the commit.
+# Called by "git commit".  The hook will run several checks on the
+# source-code.  If it exits with a non-zero status, the commit will
+# be halted.
 #
-# To enable this hook, rename this file to "pre-commit".
-
-RVM=`rvm env --path --`
+# To enable this hook, link this file to ".git/hooks/pre-commit":
+#   bin/install-hooks.sh
+#
+RVM=$(rvm env --path --)
 if [ $? ]; then
-  source ${RVM}
+    # shellcheck source=/dev/null
+    . "${RVM}"
 fi
 
 
@@ -30,6 +32,8 @@ exec 1>&2
 # Cross platform projects tend to avoid non-ASCII filenames; prevent
 # them from being added to the repository. We exploit the fact that the
 # printable range starts at the space character and ends with tilde.
+
+# shellcheck disable=SC2046
 if [ "$allownonascii" != "true" ] &&
 	# Note that the use of brackets around a tr range is ok here, (it's
 	# even required, for portability to Solaris 10's /usr/bin/tr), since
@@ -57,13 +61,14 @@ git diff-index --check --cached $against --
 err=0
 
 bundle exec rubocop
-let "err = $err + $?"
+#let "err = $err + $?"
+err=$((err + $?))
 
 bundle exec rake spec
-let "err = $err + $?"
+err=$((err + $?))
 
 bundle exec rake yard
-let "err = $err + $?"
+err=$((err + $?))
 
 echo
 

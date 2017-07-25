@@ -32,7 +32,7 @@
 
 # @author Arista EOS+ Consulting Services <eosplus-dev@arista.com>
 module Cvprac
-  # CVP Configlet api methods
+  # Cvprac::Api namespace
   module Api
     # CVP Configlet api methods
     # rubocop:disable Metrics/ModuleLength
@@ -253,16 +253,20 @@ module Cvprac
         curr_cfglts = get_configlets_by_device_id(device['systemMacAddress'])
 
         # Get a list of the configlet names and keys
-        cnames = []
-        ckeys = []
+        keep_cnames = []
+        keep_ckeys = []
         curr_cfglts.each do |configlet|
-          cnames << configlet['name']
-          ckeys << configlet['key']
+          next if configlets.include?({'name' => configlet['name'],
+                                       'key' => configlet['key']})
+          keep_cnames << configlet['name']
+          keep_ckeys << configlet['key']
         end
 
+        del_cnames = []
+        del_ckeys = []
         configlets.each do |configlet|
-          cnames.delete(configlet['name'])
-          ckeys.delete(configlet['key'])
+          del_cnames << configlet['name']
+          del_ckeys << configlet['key']
         end
 
         info = "#{app_name}: Configlet Remove from Device #{device['fqdn']}"
@@ -274,10 +278,10 @@ module Cvprac
                           action: 'associate',
                           nodeType: 'configlet',
                           nodeId: '',
-                          configletList: ckeys,
-                          configletNamesList: cnames,
-                          ignoreConfigletNamesList: [],
-                          ignoreConfigletList: [],
+                          configletList: keep_ckeys,
+                          configletNamesList: keep_cnames,
+                          ignoreConfigletNamesList: del_cnames,
+                          ignoreConfigletList: del_ckeys,
                           configletBuilderList: [],
                           configletBuilderNamesList: [],
                           ignoreConfigletBuilderList: [],
