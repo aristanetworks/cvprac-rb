@@ -64,7 +64,7 @@ bundle exec rubocop
 #let "err = $err + $?"
 err=$((err + $?))
 
-bundle exec rake spec
+bundle exec rake spec:unit
 err=$((err + $?))
 
 bundle exec rake yard
