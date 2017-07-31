@@ -488,6 +488,10 @@ class CvpClient
 
     log(Logger::DEBUG) { 'Body has an errorCode' }
     body = JSON.parse(response.body)
+    if body['errorCode'] == 'MNF404'
+      msg = 'Invalid endpoint'
+      raise CvpRequestError.new('HTTP Status 404', msg)
+    end
     if body.key?('errorMessage')
       err_msg = "errorCode: #{body['errorCode']}: #{body['errorMessage']}"
       log(Logger::ERROR) { err_msg }
@@ -495,7 +499,7 @@ class CvpClient
       error_list = if body.key?('errors')
                      body['errors']
                    else
-                     [body['errorMessage']]
+                     [body['errorCode']]
                    end
       err_msg = error_list[0]
       (1...error_list.length).each do |idx|
