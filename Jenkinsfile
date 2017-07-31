@@ -91,7 +91,7 @@ pipeline {
                // }
                 */
                 script {
-                    def setupResult = build job: 'Build_CVP_Testbed_mock', parameters: [
+                    def setupResult = build job: 'Build_CVP_Testbed', parameters: [
                         string(name: 'FQDN_NAME', value: 'cvpracrb-cvp.rtp.aristanetworks.com'),
                         string(name: 'VSPHERE_FOLDER', value: 'cvprac-ruby'),
                         string(name: 'CVP_VERSION', value: '2017.1.0.1'),
