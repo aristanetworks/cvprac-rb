@@ -67,7 +67,6 @@ pipeline {
 
         stage ('YARD doc generation') {
             steps {
-            // wrap([$class: 'AnsiColorSimpleBuildWrapper', colorMapName: "xterm"]) {
                 sh """
                     #!/bin/bash -l
                     set +x
@@ -76,7 +75,6 @@ pipeline {
                     set -x
                     bundle exec rake yard || true
                 """
-            // }
             }
         }
 
@@ -93,30 +91,21 @@ pipeline {
                // }
                 */
                 script {
-                def setupResult = build job: 'Build_CVP_Testbed_mock', parameters: [
-                    string(name: 'FQDN_NAME', value: 'cvpracrb-cvp.rtp.aristanetworks.com'),
-                    string(name: 'VSPHERE_FOLDER', value: 'cvprac-ruby'),
-                    string(name: 'CVP_VERSION', value: '2017.1.0.1'),
-                    string(name: 'CVP_ADDRESSES', value: "10.81.111.62"),
-                    string(name: 'VEOS_VERSION', value: '4.16.6M-ztp'),
-                    string(name: 'TOPOLOGY', value: 'flat'),
-                    booleanParam(name: 'BUILD_TESTS', value: false),
-                    booleanParam(name: 'TEARDOWN', value: false)
-                ]
-                #def props = new File("systest_build_job.txt")
-                def systest_build_number = setupResult.getNumber()
-                #props.text = "${systest_build_number}"
-                // Navigate to jenkins > Manage jenkins > In-process Script Approval
-                // staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods putAt java.lang.Object java.lang.String java.lang.Object
-                //setupResult.each {key, value ->
-                //    println "${key}: ${value}"
-                //}
-                env['setup_build_number'] = setupResult.getNumber()
-                //env['setup_build_number'] = setupEnvVars.build_number
-                //env['setup_build_numbers'] = setupEnvVars['build_numbers']
+                    def setupResult = build job: 'Build_CVP_Testbed_mock', parameters: [
+                        string(name: 'FQDN_NAME', value: 'cvpracrb-cvp.rtp.aristanetworks.com'),
+                        string(name: 'VSPHERE_FOLDER', value: 'cvprac-ruby'),
+                        string(name: 'CVP_VERSION', value: '2017.1.0.1'),
+                        string(name: 'CVP_ADDRESSES', value: "10.81.111.62"),
+                        string(name: 'VEOS_VERSION', value: '4.16.6M-ztp'),
+                        string(name: 'TOPOLOGY', value: 'flat'),
+                        booleanParam(name: 'BUILD_TESTS', value: false),
+                        booleanParam(name: 'TEARDOWN', value: false)
+                    ]
+                    def systest_build_number = setupResult.getNumber()
+                    // Navigate to jenkins > Manage jenkins > In-process Script Approval
+                    // staticMethod org.codehaus.groovy.runtime.DefaultGroovyMethods putAt java.lang.Object java.lang.String java.lang.Object
+                    env['setup_build_number'] = setupResult.getNumber()
                 }
-
-                // How to we get/store the build-id from above?
             }
         }
 
@@ -128,7 +117,7 @@ pipeline {
                     source /usr/local/rvm/scripts/rvm
                     rvm use 2.3.3@cvprac-rb
                     set -x
-                    #bundle exec rake spec:system || true
+                    bundle exec rake spec:system || true
                 """
 
                 step([$class: 'JUnitResultArchiver', testResults: 'results/*.xml'])
@@ -137,8 +126,6 @@ pipeline {
 
         stage ('Destroy system testbed') {
             steps {
-                // readFile 'testbed_build_job.txt'
-                // echo ""
                 echo "ENV-setup_build_number: ${env.setup_build_number}"
                 /*
                 when {
@@ -147,12 +134,11 @@ pipeline {
                       return PING_RES == 100
                     }
                 }
-                build job: 'Destroy_CVP_Testbed', parameters: [
-                    // string(name: 'BUILD_JOB_ID', value: '714')
-                    string(name: 'BUILD_SELECTOR', value: '<SpecificBuildSelector plugin="copyartifact@1.38.1">  <buildNumber>714</buildNumber></SpecificBuildSelector>')
-                    // string(name: 'BUILD_SELECTOR', value: '<SpecificBuildSelector plugin="copyartifact@1.38.1">  <buildNumber>714</buildNumber></SpecificBuildSelector>')
-                ]
                 */
+                build job: 'Destroy_CVP_Testbed', parameters: [
+                    string(name: 'BUILD_SELECTOR', value: "<SpecificBuildSelector plugin='copyartifact@1.38.1'>  <buildNumber>${env.setup_build_number}</buildNumber></SpecificBuildSelector>")
+                ]
+                // echo sh(returnStdout: true, script: 'env')
             }
         }
 
@@ -160,7 +146,7 @@ pipeline {
 
             steps {
 
-            step([$class: 'WarningsPublisher', 
+            step([$class: 'WarningsPublisher',
                   canComputeNew: false,
                   canResolveRelativePaths: false,
                   consoleParsers: [
@@ -207,11 +193,29 @@ pipeline {
 
     post {
         always {
-            mail body: "${env.JOB_NAME} (${env.BUILD_NUMBER}) ${env.projectName} build successful\n" +
-                       "Started by ${env.BUILD_CAUSE}\n\n${env}",
+            echo sh(returnStdout: true, script: 'env')
+            mail body: "${env.JOB_NAME} (${env.BUILD_NUMBER}) ${env.projectName} build ${currentBuild.result}\n" +
+                       "Started by ${env.BUILD_CAUSE}\n" +
+                       "Run status: ${env.RUN_DISPLAY_URL}\n" +
+                       "Project status: ${env.JOB_DISPLAY_URL}\n" +
+                       "Changes in this build: ${env.RUN_CHANGES_DISPLAY_URL}\n" +
+                       "Built on node: ${env.NODE_NAME}\n",
                  from: env.emailFrom,
                  //replyTo: env.emailFrom,
-                 subject: "${env.projectName} ${env.JOB_NAME} (${env.BUILD_NUMBER}) build successful",
+                 subject: "${env.projectName} ${env.JOB_NAME} (${env.BUILD_NUMBER}) build ${currentBuild.result}",
+                 to: env.emailTo
+        }
+        success {
+            echo sh(returnStdout: true, script: 'env')
+            mail body: "${env.JOB_NAME} (${env.BUILD_NUMBER}) ${env.projectName} build success\n" +
+                       "Started by ${env.BUILD_CAUSE}\n" +
+                       "Run status: ${env.RUN_DISPLAY_URL}\n" +
+                       "Project status: ${env.JOB_DISPLAY_URL}\n" +
+                       "Changes in this build: ${env.RUN_CHANGES_DISPLAY_URL}\n" +
+                       "Built on node: ${env.NODE_NAME}\n",
+                 from: env.emailFrom,
+                 //replyTo: env.emailFrom,
+                 subject: "${env.projectName} ${env.JOB_NAME} (${env.BUILD_NUMBER}) build succeeded",
                  to: env.emailTo
         }
     }
