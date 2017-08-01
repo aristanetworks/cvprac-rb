@@ -19,6 +19,18 @@ RSpec::Core::RakeTask.new(:spec) do |task|
   task.rspec_opts = ['--color', '--format', 'documentation']
 end
 
+namespace :spec do
+  RSpec::Core::RakeTask.new(:unit) do |task|
+    task.pattern = 'spec/unit/**/*_spec.rb'
+    task.rspec_opts = ['--color', '--format', 'documentation']
+  end
+
+  RSpec::Core::RakeTask.new(:system) do |task|
+    task.pattern = 'spec/system/**/*_spec.rb'
+    task.rspec_opts = ['--color', '--format', 'documentation']
+  end
+end
+
 YARD::Rake::YardocTask.new do |t|
   t.files = ['lib/**/*.rb']
 end
@@ -37,7 +49,7 @@ task :ci_prep do
 end
 
 desc 'Run the CI RSpec tests'
-task ci_spec: [:ci_prep, 'ci:setup:rspec', :spec]
+task ci_spec: [:ci_prep, 'ci:setup:rspec', 'spec:unit']
 
 task checks: %I[rubocop spec yard]
 task default: %I[rubocop spec yard]
