@@ -11,7 +11,7 @@ $LOAD_PATH.unshift File.expand_path('../lib', __FILE__)
 require 'cvprac/version'
 
 GitHubChangelogGenerator::RakeTask.new :changelog do |config|
-  config.future_release = '0.2.0'
+  config.future_release = Cvprac::VERSION
 end
 
 RuboCop::RakeTask.new
@@ -51,5 +51,5 @@ end
 desc 'Run the CI RSpec tests'
 task ci_spec: [:ci_prep, 'ci:setup:rspec', 'spec:unit']
 
-task checks: %I[rubocop spec yard]
-task default: %I[rubocop spec yard]
+task checks: %I[rubocop spec:unit yard]
+task default: %I[rubocop spec:unit yard]
