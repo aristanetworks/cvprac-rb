@@ -11,7 +11,7 @@ $LOAD_PATH.unshift File.expand_path('../lib', __FILE__)
 require 'cvprac/version'
 
 GitHubChangelogGenerator::RakeTask.new :changelog do |config|
-  config.future_release = '0.2.0'
+  config.future_release = Cvprac::VERSION
 end
 
 RuboCop::RakeTask.new
