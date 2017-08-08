@@ -15,7 +15,7 @@ pipeline {
     }
     environment {
         projectName = 'cvprac rubygem'
-        emailTo = 'jere@arista.com'
+        emailTo = 'eosplus-dev+jenkins@arista.com'
         emailFrom = 'eosplus-dev+jenkins@arista.com'
     }
     stages {
@@ -139,6 +139,23 @@ pipeline {
                     string(name: 'BUILD_SELECTOR', value: "<SpecificBuildSelector plugin='copyartifact@1.38.1'>  <buildNumber>${env.setup_build_number}</buildNumber></SpecificBuildSelector>")
                 ]
                 // echo sh(returnStdout: true, script: 'env')
+            }
+        }
+
+        stage ('Archive artifacts') {
+            when {
+                anyOf { branch 'master'; branch 'develop' }
+            }
+            steps {
+                sh """
+                    #!/bin/bash -l
+                    set +x
+                    source /usr/local/rvm/scripts/rvm
+                    rvm use 2.3.3@cvprac-rb
+                    set -x
+                    bundle exec rake build
+                """
+                archiveArtifacts artifacts: 'pkg/*.gemm', fingerprint: true, onlyIfSuccessful: true
             }
         }
 
