@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['eosplus-dev@arista.com']
   spec.summary       = %q(Arista REST API Client for CloudVision Portal)
   spec.description   = %q(Arista REST API Client for CloudVision Portal)
-  spec.homepage      = 'https://github.com/arista-aristanetworks/cvprac-rb'
+  spec.homepage      = 'https://github.com/aristanetworks/cvprac-rb'
   spec.license       = 'BSD-3-Clause'
 
   # NOTE: This may cause issues on Jenkins in detached head
