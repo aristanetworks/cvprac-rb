@@ -148,7 +148,7 @@ RSpec.describe CvpClient do
       it 'raises CvpRequestError' do
         expect { cvp.get('/user/getUs.do') }
           .to raise_error(CvpRequestError,
-                          %r{/HTTP Status 404 - Invalid endpoint/})
+                          /HTTP Status 404 - Invalid endpoint/)
       end
     end
   end
