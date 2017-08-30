@@ -18,6 +18,7 @@ to setup your environment for development, run `bundle install --path
 
 To release a new version, run:
 
+`git checkout -b release-1.0.0`
 `rvm use ruby-2.3.1`
 `bundle install --path .bundle/gems`
 `bundle exec rake checks`
