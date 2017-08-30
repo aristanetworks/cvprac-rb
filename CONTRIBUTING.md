@@ -24,6 +24,7 @@ To release a new version, run:
 `bundle exec rake checks`
 `bundle exec rake bump:[major|minor|patch|pre]`
 `bundle exec rake changelog`
+`git add CHANGELOG.md`
 `git commit -m “Bump version”`
 `git push --set-upstream origin release-1.0.0`
 Create a PR against develop
