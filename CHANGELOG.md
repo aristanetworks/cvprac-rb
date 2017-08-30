@@ -1,6 +1,13 @@
 # Change Log
 
-## [1.0.0](https://github.com/aristanetworks/cvprac-rb/tree/1.0.0) (2017-08-08)
+## [1.0.1](https://github.com/aristanetworks/cvprac-rb/tree/1.0.1) (2017-08-30)
+[Full Changelog](https://github.com/aristanetworks/cvprac-rb/compare/v1.0.0...1.0.1)
+
+**Fixed bugs:**
+
+- client.rb missing openssl require [\#13](https://github.com/aristanetworks/cvprac-rb/issues/13)
+
+## [v1.0.0](https://github.com/aristanetworks/cvprac-rb/tree/v1.0.0) (2017-08-08)
 **Implemented enhancements:**
 
 - API: Manage configlet content [\#5](https://github.com/aristanetworks/cvprac-rb/issues/5)
@@ -19,6 +26,7 @@
 
 **Merged pull requests:**
 
+- Release 1.0.0 [\#12](https://github.com/aristanetworks/cvprac-rb/pull/12) ([jerearista](https://github.com/jerearista))
 - Initial function [\#1](https://github.com/aristanetworks/cvprac-rb/pull/1) ([jerearista](https://github.com/jerearista))
 
 
