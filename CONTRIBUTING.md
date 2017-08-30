@@ -18,10 +18,28 @@ to setup your environment for development, run `bundle install --path
 
 To release a new version, run:
 
+`git checkout -b release-1.0.0`
+`rvm use ruby-2.3.1`
+`bundle install --path .bundle/gems`
 `bundle exec rake checks`
 `bundle exec rake bump:[major|minor|patch|pre]`
 `bundle exec rake changelog`
+`git add CHANGELOG.md`
+`git commit -m “Bump version”`
+`git push --set-upstream origin release-1.0.0`
+Create a PR against develop
+Wait for CI to complete
+`git checkout develop`
+`git merge --no-ff release-1.0.0`
+`git push origin develop`
+Create a PR against master
+Wait for CI to complete
+`git checkout master`
+`git merge --no-ff develop`
+`git push origin master`
 `bundle exec rake release`
+
+**TODO** Update version in develop
 
 This will create a git tag, push git commits and tags and push the .gem file to
 [rubygems.org](https://rubygems.org).

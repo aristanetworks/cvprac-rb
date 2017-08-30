@@ -38,6 +38,7 @@ require 'http-cookie'
 require 'json'
 require 'logger'
 require 'net/http'
+require 'openssl'
 require 'pp'
 require 'syslog/logger'
 

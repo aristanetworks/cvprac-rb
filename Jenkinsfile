@@ -155,7 +155,7 @@ pipeline {
                     set -x
                     bundle exec rake build
                 """
-                archiveArtifacts artifacts: 'pkg/*.gemm', fingerprint: true, onlyIfSuccessful: true
+                archiveArtifacts artifacts: 'pkg/*.gem', fingerprint: true, onlyIfSuccessful: true
             }
         }
 
